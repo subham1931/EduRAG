@@ -12,13 +12,22 @@ import { NotesDialog } from "@/components/dashboard/notes-dialog";
 import { Button } from "@/components/ui/button";
 import {
   ArrowLeft,
-  FileText,
   Loader2,
   BookOpen,
-  Upload,
-  Calendar,
   MessageSquare,
+  HelpCircle,
+  FileText,
+  Clock,
+  Sparkles,
 } from "lucide-react";
+
+interface GeneratedItem {
+  id: string;
+  type: "quiz" | "notes";
+  topic: string;
+  detail: string;
+  timestamp: Date;
+}
 
 export default function SubjectPage() {
   const params = useParams();
@@ -28,6 +37,7 @@ export default function SubjectPage() {
 
   const [subject, setSubject] = useState<Subject | null>(null);
   const [documents, setDocuments] = useState<Doc[]>([]);
+  const [generatedItems, setGeneratedItems] = useState<GeneratedItem[]>([]);
 
   const fetchDocuments = useCallback(async () => {
     try {
@@ -47,6 +57,32 @@ export default function SubjectPage() {
       router.push("/dashboard");
     }
   }, [subjects, subjectId, router, fetchDocuments]);
+
+  const handleQuizGenerated = (topic: string, count: number) => {
+    setGeneratedItems((prev) => [
+      {
+        id: crypto.randomUUID(),
+        type: "quiz",
+        topic: topic || subject?.name || "General",
+        detail: `${count} MCQs`,
+        timestamp: new Date(),
+      },
+      ...prev,
+    ]);
+  };
+
+  const handleNotesGenerated = (topic: string) => {
+    setGeneratedItems((prev) => [
+      {
+        id: crypto.randomUUID(),
+        type: "notes",
+        topic: topic || subject?.name || "General",
+        detail: "Study notes",
+        timestamp: new Date(),
+      },
+      ...prev,
+    ]);
+  };
 
   if (!subject) {
     return (
@@ -80,48 +116,72 @@ export default function SubjectPage() {
           </div>
           <div className="flex items-center gap-2">
             <UploadDialog subject={subject} onUploadComplete={fetchDocuments} />
-            <QuizDialog subject={subject} />
-            <NotesDialog subject={subject} />
+            <QuizDialog subject={subject} onGenerated={handleQuizGenerated} />
+            <NotesDialog subject={subject} onGenerated={handleNotesGenerated} />
           </div>
         </div>
 
-        {/* Documents grid */}
+        {/* Generated Quizzes & Notes */}
         <div className="flex-1 p-4 sm:p-6">
-          {documents.length === 0 ? (
+          {generatedItems.length === 0 ? (
             <div className="flex h-full flex-col items-center justify-center rounded-2xl border-2 border-dashed border-muted-foreground/20">
               <div className="mb-3 flex h-14 w-14 items-center justify-center rounded-2xl bg-muted">
-                <Upload className="h-7 w-7 text-muted-foreground/40" />
+                <Sparkles className="h-7 w-7 text-muted-foreground/40" />
               </div>
               <p className="font-medium text-muted-foreground">
-                No documents yet
+                No content generated yet
               </p>
-              <p className="mt-1 text-sm text-muted-foreground/70">
-                Upload a PDF to start asking questions
+              <p className="mt-1 max-w-xs text-center text-sm text-muted-foreground/70">
+                {documents.length > 0
+                  ? "Use the Quiz or Notes buttons above to generate study materials"
+                  : "Upload a PDF first, then generate quizzes and notes"}
               </p>
             </div>
           ) : (
             <div>
               <h3 className="mb-4 text-sm font-semibold text-muted-foreground">
-                Uploaded Documents
+                Generated Content
               </h3>
               <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
-                {documents.map((doc) => (
+                {generatedItems.map((item) => (
                   <div
-                    key={doc.id}
-                    className="flex items-center gap-3 rounded-xl border bg-card p-3.5"
+                    key={item.id}
+                    className="flex items-start gap-3 rounded-xl border bg-card p-4"
                   >
-                    <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-blue-500/10">
-                      <FileText className="h-4 w-4 text-blue-500" />
+                    <div
+                      className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-lg ${
+                        item.type === "quiz"
+                          ? "bg-violet-500/10"
+                          : "bg-emerald-500/10"
+                      }`}
+                    >
+                      {item.type === "quiz" ? (
+                        <HelpCircle className="h-5 w-5 text-violet-500" />
+                      ) : (
+                        <FileText className="h-5 w-5 text-emerald-500" />
+                      )}
                     </div>
                     <div className="min-w-0 flex-1">
-                      <p className="truncate text-sm font-medium">
-                        {doc.filename}
+                      <span
+                        className={`inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider ${
+                          item.type === "quiz"
+                            ? "bg-violet-500/10 text-violet-500"
+                            : "bg-emerald-500/10 text-emerald-500"
+                        }`}
+                      >
+                        {item.type}
+                      </span>
+                      <p className="mt-1 truncate text-sm font-medium">
+                        {item.topic}
                       </p>
-                      <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                        <Calendar className="h-3 w-3" />
-                        {new Date(doc.created_at).toLocaleDateString("en-US", {
-                          month: "short",
-                          day: "numeric",
+                      <p className="text-xs text-muted-foreground">
+                        {item.detail}
+                      </p>
+                      <div className="mt-2 flex items-center gap-1 text-xs text-muted-foreground/60">
+                        <Clock className="h-3 w-3" />
+                        {item.timestamp.toLocaleTimeString("en-US", {
+                          hour: "numeric",
+                          minute: "2-digit",
                         })}
                       </div>
                     </div>

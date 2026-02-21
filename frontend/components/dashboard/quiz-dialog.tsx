@@ -19,9 +19,10 @@ import api from "@/lib/api";
 
 interface QuizDialogProps {
   subject: Subject;
+  onGenerated?: (topic: string, count: number) => void;
 }
 
-export function QuizDialog({ subject }: QuizDialogProps) {
+export function QuizDialog({ subject, onGenerated }: QuizDialogProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [topic, setTopic] = useState("");
   const [loading, setLoading] = useState(false);
@@ -46,6 +47,7 @@ export function QuizDialog({ subject }: QuizDialogProps) {
         num_questions: 10,
       });
       setQuestions(data.questions);
+      onGenerated?.(topic || "General", data.questions.length);
     } catch (err: any) {
       setError(
         err.response?.data?.detail || "Failed to generate quiz. Try again."

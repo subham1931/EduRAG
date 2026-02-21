@@ -20,9 +20,10 @@ import api from "@/lib/api";
 
 interface NotesDialogProps {
   subject: Subject;
+  onGenerated?: (topic: string) => void;
 }
 
-export function NotesDialog({ subject }: NotesDialogProps) {
+export function NotesDialog({ subject, onGenerated }: NotesDialogProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [topic, setTopic] = useState("");
   const [loading, setLoading] = useState(false);
@@ -41,6 +42,7 @@ export function NotesDialog({ subject }: NotesDialogProps) {
         topic: topic || undefined,
       });
       setNotes(data.notes);
+      onGenerated?.(topic || "General");
     } catch (err: any) {
       setError(
         err.response?.data?.detail || "Failed to generate notes. Try again."
