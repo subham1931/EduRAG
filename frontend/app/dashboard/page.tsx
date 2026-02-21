@@ -8,54 +8,55 @@ import {
   GraduationCap,
   ArrowRight,
   Calendar,
+  Sparkles,
+  FileText,
+  MessageSquare,
 } from "lucide-react";
 
 export default function DashboardPage() {
   const router = useRouter();
   const { subjects } = useDashboard();
 
-  const colors = [
-    "from-blue-500/20 to-blue-600/5 border-blue-500/20",
-    "from-purple-500/20 to-purple-600/5 border-purple-500/20",
-    "from-emerald-500/20 to-emerald-600/5 border-emerald-500/20",
-    "from-orange-500/20 to-orange-600/5 border-orange-500/20",
-    "from-pink-500/20 to-pink-600/5 border-pink-500/20",
-    "from-cyan-500/20 to-cyan-600/5 border-cyan-500/20",
-  ];
-
-  const iconColors = [
-    "text-blue-400",
-    "text-purple-400",
-    "text-emerald-400",
-    "text-orange-400",
-    "text-pink-400",
-    "text-cyan-400",
+  const accents = [
+    { bg: "bg-purple-500", light: "bg-purple-500/10", text: "text-purple-500" },
+    { bg: "bg-blue-500", light: "bg-blue-500/10", text: "text-blue-500" },
+    { bg: "bg-emerald-500", light: "bg-emerald-500/10", text: "text-emerald-500" },
+    { bg: "bg-orange-500", light: "bg-orange-500/10", text: "text-orange-500" },
+    { bg: "bg-pink-500", light: "bg-pink-500/10", text: "text-pink-500" },
+    { bg: "bg-cyan-500", light: "bg-cyan-500/10", text: "text-cyan-500" },
   ];
 
   return (
-    <main className="mx-auto max-w-7xl px-4 py-8 sm:px-6">
-      <div className="mb-8">
-        <h1 className="text-2xl font-bold tracking-tight">Your Subjects</h1>
-        <p className="mt-1 text-sm text-muted-foreground">
+    <main className="mx-auto max-w-7xl px-4 py-10 sm:px-6">
+      {/* Header */}
+      <div className="mb-10">
+        <div className="mb-2 inline-flex items-center gap-2 rounded-full border bg-background px-4 py-1.5 text-sm text-muted-foreground">
+          <Sparkles className="h-4 w-4 text-primary" />
+          Dashboard
+        </div>
+        <h1 className="text-3xl font-bold tracking-tight sm:text-4xl">
+          Your Subjects
+        </h1>
+        <p className="mt-2 text-muted-foreground">
           Select a subject to ask questions, generate quizzes, or create notes.
         </p>
       </div>
 
       {subjects.length === 0 ? (
-        <div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-muted-foreground/25 py-20">
-          <GraduationCap className="mb-4 h-16 w-16 text-muted-foreground/20" />
-          <h2 className="text-lg font-medium text-muted-foreground">
-            No subjects yet
-          </h2>
-          <p className="mt-1 text-sm text-muted-foreground/70">
-            Click &quot;New Subject&quot; to create your first one.
+        <div className="flex flex-col items-center justify-center rounded-2xl border-2 border-dashed border-muted-foreground/20 py-24">
+          <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-primary/10">
+            <GraduationCap className="h-8 w-8 text-primary" />
+          </div>
+          <h2 className="text-xl font-semibold">No subjects yet</h2>
+          <p className="mt-2 max-w-sm text-center text-sm text-muted-foreground">
+            Click &quot;New Subject&quot; in the top bar to create your first
+            subject and start uploading materials.
           </p>
         </div>
       ) : (
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
           {subjects.map((subject, idx) => {
-            const colorClass = colors[idx % colors.length];
-            const iconColor = iconColors[idx % iconColors.length];
+            const accent = accents[idx % accents.length];
             const date = new Date(subject.created_at).toLocaleDateString(
               "en-US",
               { month: "short", day: "numeric", year: "numeric" }
@@ -65,28 +66,39 @@ export default function DashboardPage() {
               <button
                 key={subject.id}
                 onClick={() => router.push(`/dashboard/${subject.id}`)}
-                className={`group relative flex flex-col rounded-xl border bg-gradient-to-br p-5 text-left transition-all hover:scale-[1.02] hover:shadow-lg hover:shadow-primary/10 ${colorClass}`}
+                className="group relative flex flex-col rounded-2xl border bg-card p-6 text-left transition-all hover:shadow-lg hover:shadow-primary/5"
               >
-                <div className="mb-4 flex items-start justify-between">
+                {/* Accent top strip */}
+                <div
+                  className={`absolute inset-x-0 top-0 h-1 rounded-t-2xl ${accent.bg}`}
+                />
+
+                <div className="mb-5 flex items-start justify-between">
                   <div
-                    className={`flex h-10 w-10 items-center justify-center rounded-lg bg-background/50 ${iconColor}`}
+                    className={`flex h-12 w-12 items-center justify-center rounded-xl ${accent.light}`}
                   >
-                    <BookOpen className="h-5 w-5" />
+                    <BookOpen className={`h-6 w-6 ${accent.text}`} />
                   </div>
-                  <ArrowRight className="h-4 w-4 text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100" />
+                  <div className="flex h-8 w-8 items-center justify-center rounded-full bg-muted opacity-0 transition-all group-hover:opacity-100">
+                    <ArrowRight className="h-4 w-4 text-muted-foreground" />
+                  </div>
                 </div>
 
-                <h3 className="text-base font-semibold">{subject.name}</h3>
+                <h3 className="text-lg font-semibold tracking-tight">
+                  {subject.name}
+                </h3>
 
                 {subject.description && (
-                  <p className="mt-1 line-clamp-2 text-sm text-muted-foreground">
+                  <p className="mt-1.5 line-clamp-2 text-sm text-muted-foreground">
                     {subject.description}
                   </p>
                 )}
 
-                <div className="mt-auto flex items-center gap-1.5 pt-4 text-xs text-muted-foreground/70">
-                  <Calendar className="h-3 w-3" />
-                  {date}
+                <div className="mt-5 flex items-center gap-4 border-t pt-4">
+                  <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                    <Calendar className="h-3.5 w-3.5" />
+                    {date}
+                  </div>
                 </div>
               </button>
             );

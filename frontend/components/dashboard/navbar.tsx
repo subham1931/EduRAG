@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import { useTheme } from "next-themes";
+import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -71,19 +72,19 @@ export function Navbar({ onSubjectCreated }: NavbarProps) {
   const initials = userEmail ? userEmail.charAt(0).toUpperCase() : "U";
 
   return (
-    <nav className="sticky top-0 z-50 border-b bg-card/80 backdrop-blur-md">
+    <nav className="sticky top-0 z-50 border-b bg-background/80 backdrop-blur-md">
       <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6">
-        <div className="flex items-center gap-2.5">
+        <Link href="/dashboard" className="flex items-center gap-2.5">
           <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary/10">
             <GraduationCap className="h-5 w-5 text-primary" />
           </div>
           <span className="text-lg font-bold tracking-tight">EduRAG</span>
-        </div>
+        </Link>
 
         <div className="flex items-center gap-3">
           <Dialog open={isOpen} onOpenChange={setIsOpen}>
             <DialogTrigger asChild>
-              <Button size="sm">
+              <Button size="sm" className="rounded-full">
                 <Plus className="mr-2 h-4 w-4" />
                 New Subject
               </Button>
@@ -103,6 +104,7 @@ export function Navbar({ onSubjectCreated }: NavbarProps) {
                     value={name}
                     onChange={(e) => setName(e.target.value)}
                     placeholder="e.g. Physics 101"
+                    className="h-11"
                   />
                 </div>
                 <div className="space-y-2">
@@ -112,12 +114,13 @@ export function Navbar({ onSubjectCreated }: NavbarProps) {
                     value={description}
                     onChange={(e) => setDescription(e.target.value)}
                     placeholder="Brief description"
+                    className="h-11"
                   />
                 </div>
                 <Button
                   onClick={handleCreate}
                   disabled={loading || !name.trim()}
-                  className="w-full"
+                  className="h-11 w-full rounded-lg text-base"
                 >
                   {loading ? "Creating..." : "Create Subject"}
                 </Button>
@@ -125,7 +128,6 @@ export function Navbar({ onSubjectCreated }: NavbarProps) {
             </DialogContent>
           </Dialog>
 
-          {/* Theme toggle */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" size="icon" className="h-9 w-9">
@@ -159,7 +161,6 @@ export function Navbar({ onSubjectCreated }: NavbarProps) {
             </DropdownMenuContent>
           </DropdownMenu>
 
-          {/* User menu */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <button className="flex h-9 w-9 items-center justify-center rounded-full bg-primary/10 text-sm font-medium text-primary transition-colors hover:bg-primary/20 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 focus:ring-offset-background">

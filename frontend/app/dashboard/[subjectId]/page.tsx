@@ -10,7 +10,7 @@ import { UploadDialog } from "@/components/dashboard/upload-dialog";
 import { QuizDialog } from "@/components/dashboard/quiz-dialog";
 import { NotesDialog } from "@/components/dashboard/notes-dialog";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, FileText, Loader2 } from "lucide-react";
+import { ArrowLeft, FileText, Loader2, BookOpen } from "lucide-react";
 
 export default function SubjectPage() {
   const params = useParams();
@@ -51,21 +51,29 @@ export default function SubjectPage() {
   return (
     <div className="flex h-full flex-col">
       {/* Subject bar */}
-      <div className="flex items-center justify-between border-b px-4 py-2.5 sm:px-6">
+      <div className="flex items-center justify-between border-b bg-muted/30 px-4 py-3 sm:px-6">
         <div className="flex items-center gap-3">
           <Button
             variant="ghost"
             size="icon"
+            className="h-9 w-9 rounded-full"
             onClick={() => router.push("/dashboard")}
           >
             <ArrowLeft className="h-4 w-4" />
           </Button>
-          <div>
-            <h2 className="text-base font-semibold">{subject.name}</h2>
-            <div className="flex items-center gap-1 text-xs text-muted-foreground">
-              <FileText className="h-3 w-3" />
-              {documents.length} document
-              {documents.length !== 1 ? "s" : ""} uploaded
+          <div className="flex items-center gap-3">
+            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary/10">
+              <BookOpen className="h-4 w-4 text-primary" />
+            </div>
+            <div>
+              <h2 className="text-sm font-semibold leading-tight">
+                {subject.name}
+              </h2>
+              <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                <FileText className="h-3 w-3" />
+                {documents.length} document
+                {documents.length !== 1 ? "s" : ""} uploaded
+              </div>
             </div>
           </div>
         </div>
