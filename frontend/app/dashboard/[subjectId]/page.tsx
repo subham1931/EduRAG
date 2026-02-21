@@ -75,16 +75,7 @@ export default function SubjectPage() {
               <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary/10">
                 <BookOpen className="h-4 w-4 text-primary" />
               </div>
-              <div>
-                <h2 className="text-sm font-semibold leading-tight">
-                  {subject.name}
-                </h2>
-                <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                  <FileText className="h-3 w-3" />
-                  {documents.length} document
-                  {documents.length !== 1 ? "s" : ""} uploaded
-                </div>
-              </div>
+              <h2 className="text-sm font-semibold">{subject.name}</h2>
             </div>
           </div>
           <div className="flex items-center gap-2">
