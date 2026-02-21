@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
+import { toast } from "sonner";
 import ReactMarkdown from "react-markdown";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -14,19 +15,28 @@ import {
   DialogTrigger,
   DialogDescription,
 } from "@/components/ui/dialog";
-import { FileText, Loader2, Copy, CheckCircle2 } from "lucide-react";
+import {
+  FileText,
+  Loader2,
+  Copy,
+  CheckCircle2,
+  Save,
+  Check,
+} from "lucide-react";
 import { Subject } from "@/types";
 import api from "@/lib/api";
 
 interface NotesDialogProps {
   subject: Subject;
-  onGenerated?: (topic: string) => void;
+  onGenerated?: () => void;
 }
 
 export function NotesDialog({ subject, onGenerated }: NotesDialogProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [topic, setTopic] = useState("");
   const [loading, setLoading] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [saved, setSaved] = useState(false);
   const [notes, setNotes] = useState("");
   const [copied, setCopied] = useState(false);
   const [error, setError] = useState("");
@@ -35,6 +45,7 @@ export function NotesDialog({ subject, onGenerated }: NotesDialogProps) {
     setLoading(true);
     setError("");
     setNotes("");
+    setSaved(false);
 
     try {
       const { data } = await api.post("/generate-notes", {
@@ -42,13 +53,31 @@ export function NotesDialog({ subject, onGenerated }: NotesDialogProps) {
         topic: topic || undefined,
       });
       setNotes(data.notes);
-      onGenerated?.(topic || "General");
     } catch (err: any) {
       setError(
         err.response?.data?.detail || "Failed to generate notes. Try again."
       );
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleSave = async () => {
+    setSaving(true);
+    try {
+      await api.post("/save-notes", {
+        subject_id: subject.id,
+        title: topic || "General",
+        content: notes,
+      });
+      setSaved(true);
+      onGenerated?.();
+      setIsOpen(false);
+      toast.success("Notes saved successfully!");
+    } catch (err: any) {
+      toast.error(err.response?.data?.detail || "Failed to save notes.");
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -66,6 +95,7 @@ export function NotesDialog({ subject, onGenerated }: NotesDialogProps) {
         if (!open) {
           setNotes("");
           setError("");
+          setSaved(false);
         }
       }}
     >
@@ -128,18 +158,40 @@ export function NotesDialog({ subject, onGenerated }: NotesDialogProps) {
             </div>
 
             <ScrollArea className="h-[60vh]">
-              <div className="prose prose-sm dark:prose-invert max-w-none pr-4">
+              <div className="prose dark:prose-invert max-w-none pr-4 prose-h1:text-xl prose-h1:font-bold prose-h1:mb-4 prose-h2:text-lg prose-h2:font-semibold prose-h2:mt-6 prose-h2:mb-3 prose-h2:text-primary prose-h3:text-base prose-h3:font-medium prose-h3:mt-4 prose-h3:mb-2 prose-ol:my-2 prose-ol:space-y-2 prose-ul:my-1 prose-ul:space-y-1 prose-li:my-0 prose-li:leading-relaxed prose-strong:text-foreground prose-code:rounded prose-code:bg-muted prose-code:px-1.5 prose-code:py-0.5 prose-code:text-sm prose-code:font-mono prose-hr:my-6 prose-hr:border-border prose-p:my-1 prose-p:leading-relaxed">
                 <ReactMarkdown>{notes}</ReactMarkdown>
               </div>
             </ScrollArea>
 
-            <Button
-              variant="outline"
-              onClick={() => setNotes("")}
-              className="w-full"
-            >
-              Generate Again
-            </Button>
+            {error && <p className="text-sm text-destructive">{error}</p>}
+
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setNotes("");
+                  setSaved(false);
+                }}
+                className="flex-1"
+              >
+                Generate Again
+              </Button>
+
+              <Button
+                variant={saved ? "secondary" : "default"}
+                onClick={handleSave}
+                disabled={saving || saved}
+              >
+                {saving ? (
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                ) : saved ? (
+                  <Check className="mr-2 h-4 w-4" />
+                ) : (
+                  <Save className="mr-2 h-4 w-4" />
+                )}
+                {saved ? "Saved" : "Save Notes"}
+              </Button>
+            </div>
           </div>
         )}
       </DialogContent>

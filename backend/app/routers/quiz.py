@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException
-from app.models.schemas import QuizRequest, QuizResponse, TokenPayload
-from app.services.quiz_service import generate_quiz
+from app.models.schemas import QuizRequest, QuizResponse, SaveQuizRequest, TokenPayload
+from app.services.quiz_service import generate_quiz, save_quiz, get_quizzes
 from app.services.subject_service import get_subject_by_id
 from app.utils.auth import get_current_teacher
 
@@ -23,5 +23,33 @@ async def generate_quiz_endpoint(
         return result
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/save-quiz")
+async def save_quiz_endpoint(
+    body: SaveQuizRequest,
+    teacher: TokenPayload = Depends(get_current_teacher),
+):
+    try:
+        result = await save_quiz(
+            teacher_id=teacher.sub,
+            subject_id=body.subject_id,
+            title=body.title,
+            questions=body.questions,
+        )
+        return result
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/quizzes/{subject_id}")
+async def list_quizzes(
+    subject_id: str,
+    teacher: TokenPayload = Depends(get_current_teacher),
+):
+    try:
+        return await get_quizzes(teacher.sub, subject_id)
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))

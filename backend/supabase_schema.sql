@@ -102,11 +102,41 @@ BEGIN
 END;
 $$;
 
+-- 5b. Generated notes table
+CREATE TABLE IF NOT EXISTS public.generated_notes (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    teacher_id UUID NOT NULL,
+    subject_id UUID NOT NULL REFERENCES public.subjects(id) ON DELETE CASCADE,
+    title TEXT,
+    content TEXT NOT NULL,
+    created_at TIMESTAMPTZ DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS idx_notes_subject ON public.generated_notes(subject_id);
+CREATE INDEX IF NOT EXISTS idx_notes_teacher ON public.generated_notes(teacher_id);
+
+-- 6b. Chat messages table
+CREATE TABLE IF NOT EXISTS public.chat_messages (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    teacher_id UUID NOT NULL,
+    subject_id UUID NOT NULL REFERENCES public.subjects(id) ON DELETE CASCADE,
+    role TEXT NOT NULL CHECK (role IN ('user', 'assistant')),
+    content TEXT NOT NULL,
+    sources JSONB,
+    created_at TIMESTAMPTZ DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS idx_chat_teacher ON public.chat_messages(teacher_id);
+CREATE INDEX IF NOT EXISTS idx_chat_subject ON public.chat_messages(subject_id);
+CREATE INDEX IF NOT EXISTS idx_chat_created ON public.chat_messages(subject_id, created_at);
+
 -- 7. Row Level Security
 ALTER TABLE public.subjects ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.documents ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.document_chunks ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.quizzes ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.generated_notes ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.chat_messages ENABLE ROW LEVEL SECURITY;
 
 -- Service role bypass (backend uses service_role key)
 CREATE POLICY "Service role full access subjects" ON public.subjects
@@ -119,4 +149,10 @@ CREATE POLICY "Service role full access chunks" ON public.document_chunks
     FOR ALL USING (true) WITH CHECK (true);
 
 CREATE POLICY "Service role full access quizzes" ON public.quizzes
+    FOR ALL USING (true) WITH CHECK (true);
+
+CREATE POLICY "Service role full access generated_notes" ON public.generated_notes
+    FOR ALL USING (true) WITH CHECK (true);
+
+CREATE POLICY "Service role full access chat_messages" ON public.chat_messages
     FOR ALL USING (true) WITH CHECK (true);

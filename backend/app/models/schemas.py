@@ -74,3 +74,34 @@ class NotesRequest(BaseModel):
 class NotesResponse(BaseModel):
     subject: str
     notes: str
+
+
+# ── Save Quiz / Notes ─────────────────────────────────────────────────
+class SaveQuizRequest(BaseModel):
+    subject_id: str
+    title: str = "General"
+    questions: list[dict]
+
+
+class SaveNotesRequest(BaseModel):
+    subject_id: str
+    title: str = "General"
+    content: str = Field(..., min_length=1)
+
+
+# ── Chat ──────────────────────────────────────────────────────────────
+class ChatMessageCreate(BaseModel):
+    subject_id: str
+    role: str = Field(..., pattern="^(user|assistant)$")
+    content: str = Field(..., min_length=1)
+    sources: Optional[list[dict]] = None
+
+
+class ChatMessageResponse(BaseModel):
+    id: str
+    teacher_id: str
+    subject_id: str
+    role: str
+    content: str
+    sources: Optional[list[dict]] = None
+    created_at: str

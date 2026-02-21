@@ -1,6 +1,7 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useRef } from "react";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -13,32 +14,39 @@ import {
   DialogTrigger,
   DialogDescription,
 } from "@/components/ui/dialog";
-import { HelpCircle, Loader2, CheckCircle2, XCircle } from "lucide-react";
+import {
+  HelpCircle,
+  Loader2,
+  CheckCircle2,
+  GripVertical,
+  Save,
+  Check,
+} from "lucide-react";
 import { Subject, QuizQuestion } from "@/types";
 import api from "@/lib/api";
 
 interface QuizDialogProps {
   subject: Subject;
-  onGenerated?: (topic: string, count: number) => void;
+  onGenerated?: () => void;
 }
 
 export function QuizDialog({ subject, onGenerated }: QuizDialogProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [topic, setTopic] = useState("");
   const [loading, setLoading] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [saved, setSaved] = useState(false);
   const [questions, setQuestions] = useState<QuizQuestion[]>([]);
-  const [selectedAnswers, setSelectedAnswers] = useState<
-    Record<number, string>
-  >({});
-  const [showResults, setShowResults] = useState(false);
   const [error, setError] = useState("");
+
+  const dragIdx = useRef<number | null>(null);
+  const dragOverIdx = useRef<number | null>(null);
 
   const handleGenerate = async () => {
     setLoading(true);
     setError("");
     setQuestions([]);
-    setSelectedAnswers({});
-    setShowResults(false);
+    setSaved(false);
 
     try {
       const { data } = await api.post("/generate-quiz", {
@@ -47,7 +55,6 @@ export function QuizDialog({ subject, onGenerated }: QuizDialogProps) {
         num_questions: 10,
       });
       setQuestions(data.questions);
-      onGenerated?.(topic || "General", data.questions.length);
     } catch (err: any) {
       setError(
         err.response?.data?.detail || "Failed to generate quiz. Try again."
@@ -57,18 +64,54 @@ export function QuizDialog({ subject, onGenerated }: QuizDialogProps) {
     }
   };
 
-  const handleSelectAnswer = (qIdx: number, answer: string) => {
-    if (showResults) return;
-    setSelectedAnswers((prev) => ({ ...prev, [qIdx]: answer }));
+  const handleSave = async () => {
+    setSaving(true);
+    try {
+      await api.post("/save-quiz", {
+        subject_id: subject.id,
+        title: topic || "General",
+        questions: questions.map((q) => ({
+          question: q.question,
+          options: q.options,
+          correct_answer: q.correct_answer,
+        })),
+      });
+      setSaved(true);
+      onGenerated?.();
+      setIsOpen(false);
+      toast.success("Quiz saved successfully!");
+    } catch (err: any) {
+      toast.error(err.response?.data?.detail || "Failed to save quiz.");
+    } finally {
+      setSaving(false);
+    }
   };
 
-  const handleCheckAnswers = () => {
-    setShowResults(true);
+  const handleDragStart = (idx: number) => {
+    dragIdx.current = idx;
   };
 
-  const score = questions.reduce((acc, q, i) => {
-    return acc + (selectedAnswers[i] === q.correct_answer ? 1 : 0);
-  }, 0);
+  const handleDragEnter = (idx: number) => {
+    dragOverIdx.current = idx;
+  };
+
+  const handleDragEnd = () => {
+    if (dragIdx.current === null || dragOverIdx.current === null) return;
+    if (dragIdx.current === dragOverIdx.current) {
+      dragIdx.current = null;
+      dragOverIdx.current = null;
+      return;
+    }
+
+    const reordered = [...questions];
+    const [removed] = reordered.splice(dragIdx.current, 1);
+    reordered.splice(dragOverIdx.current, 0, removed);
+    setQuestions(reordered);
+    setSaved(false);
+
+    dragIdx.current = null;
+    dragOverIdx.current = null;
+  };
 
   return (
     <Dialog
@@ -77,9 +120,8 @@ export function QuizDialog({ subject, onGenerated }: QuizDialogProps) {
         setIsOpen(open);
         if (!open) {
           setQuestions([]);
-          setSelectedAnswers({});
-          setShowResults(false);
           setError("");
+          setSaved(false);
         }
       }}
     >
@@ -93,7 +135,8 @@ export function QuizDialog({ subject, onGenerated }: QuizDialogProps) {
         <DialogHeader>
           <DialogTitle>Quiz — {subject.name}</DialogTitle>
           <DialogDescription>
-            Generate MCQ questions from your uploaded materials.
+            Generate MCQ questions from your uploaded materials. Drag to
+            reorder questions.
           </DialogDescription>
         </DialogHeader>
 
@@ -125,56 +168,53 @@ export function QuizDialog({ subject, onGenerated }: QuizDialogProps) {
           </div>
         ) : (
           <div className="space-y-4">
-            {showResults && (
-              <div className="rounded-lg bg-primary/10 p-3 text-center">
-                <p className="text-lg font-bold">
-                  Score: {score}/{questions.length}
-                </p>
-              </div>
-            )}
-
             <ScrollArea className="h-[60vh]">
-              <div className="space-y-6 pr-4">
+              <div className="space-y-4 pr-4">
                 {questions.map((q, qIdx) => (
-                  <div key={qIdx} className="space-y-2">
-                    <p className="text-sm font-medium">
-                      {qIdx + 1}. {q.question}
-                    </p>
-                    <div className="space-y-1">
-                      {q.options.map((opt, oIdx) => {
-                        const isSelected = selectedAnswers[qIdx] === opt;
+                  <div
+                    key={qIdx}
+                    draggable
+                    onDragStart={() => handleDragStart(qIdx)}
+                    onDragEnter={() => handleDragEnter(qIdx)}
+                    onDragEnd={handleDragEnd}
+                    onDragOver={(e) => e.preventDefault()}
+                    className="group rounded-lg border bg-card p-4 transition-shadow hover:shadow-md"
+                  >
+                    <div className="mb-3 flex items-start gap-2">
+                      <div className="flex cursor-grab items-center pt-0.5 text-muted-foreground/40 active:cursor-grabbing group-hover:text-muted-foreground">
+                        <GripVertical className="h-4 w-4" />
+                      </div>
+                      <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary/10 text-xs font-bold text-primary">
+                        {qIdx + 1}
+                      </span>
+                      <p className="text-sm font-medium leading-relaxed">
+                        {q.question}
+                      </p>
+                    </div>
+                    <div className="ml-8 space-y-1.5">
+                      {q.options.slice(0, 4).map((opt, oIdx) => {
                         const isCorrect = q.correct_answer === opt;
-                        let optionClass =
-                          "flex items-center gap-2 rounded-md border px-3 py-2 text-sm cursor-pointer transition-colors ";
-
-                        if (showResults) {
-                          if (isCorrect) {
-                            optionClass +=
-                              "border-green-500 bg-green-500/10 text-green-400";
-                          } else if (isSelected && !isCorrect) {
-                            optionClass +=
-                              "border-red-500 bg-red-500/10 text-red-400";
-                          } else {
-                            optionClass +=
-                              "border-border text-muted-foreground";
-                          }
-                        } else {
-                          optionClass += isSelected
-                            ? "border-primary bg-primary/10"
-                            : "border-border hover:border-primary/50";
-                        }
-
+                        const label = String.fromCharCode(97 + oIdx);
                         return (
                           <div
                             key={oIdx}
-                            className={optionClass}
-                            onClick={() => handleSelectAnswer(qIdx, opt)}
+                            className={`flex items-center gap-2.5 rounded-md border px-3 py-2 text-sm ${
+                              isCorrect
+                                ? "border-green-500/50 bg-green-500/10 text-green-500 dark:text-green-400"
+                                : "border-border text-muted-foreground"
+                            }`}
                           >
-                            {showResults && isCorrect && (
+                            <span
+                              className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-xs font-semibold ${
+                                isCorrect
+                                  ? "bg-green-500/20 text-green-500"
+                                  : "bg-muted text-muted-foreground"
+                              }`}
+                            >
+                              {label}
+                            </span>
+                            {isCorrect && (
                               <CheckCircle2 className="h-4 w-4 shrink-0 text-green-500" />
-                            )}
-                            {showResults && isSelected && !isCorrect && (
-                              <XCircle className="h-4 w-4 shrink-0 text-red-500" />
                             )}
                             <span>{opt}</span>
                           </div>
@@ -186,31 +226,35 @@ export function QuizDialog({ subject, onGenerated }: QuizDialogProps) {
               </div>
             </ScrollArea>
 
-            {!showResults && (
-              <Button
-                onClick={handleCheckAnswers}
-                disabled={
-                  Object.keys(selectedAnswers).length !== questions.length
-                }
-                className="w-full"
-              >
-                Check Answers
-              </Button>
-            )}
+            {error && <p className="text-sm text-destructive">{error}</p>}
 
-            {showResults && (
+            <div className="flex gap-2">
               <Button
                 variant="outline"
                 onClick={() => {
                   setQuestions([]);
-                  setSelectedAnswers({});
-                  setShowResults(false);
+                  setSaved(false);
                 }}
-                className="w-full"
+                className="flex-1"
               >
                 Generate New Quiz
               </Button>
-            )}
+
+              <Button
+                variant={saved ? "secondary" : "default"}
+                onClick={handleSave}
+                disabled={saving || saved}
+              >
+                {saving ? (
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                ) : saved ? (
+                  <Check className="mr-2 h-4 w-4" />
+                ) : (
+                  <Save className="mr-2 h-4 w-4" />
+                )}
+                {saved ? "Saved" : "Save Quiz"}
+              </Button>
+            </div>
           </div>
         )}
       </DialogContent>

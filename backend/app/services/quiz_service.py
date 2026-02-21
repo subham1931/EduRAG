@@ -1,6 +1,7 @@
 from app.rag.retriever import retrieve_relevant_chunks, format_context
 from app.rag.llm import generate_quiz_json
 from app.services.subject_service import get_subject_by_id
+from app.utils.supabase_client import get_supabase
 
 
 async def generate_quiz(
@@ -27,3 +28,32 @@ async def generate_quiz(
         "subject": subject_name,
         "questions": questions,
     }
+
+
+async def save_quiz(
+    teacher_id: str,
+    subject_id: str,
+    title: str,
+    questions: list[dict],
+) -> dict:
+    supabase = get_supabase()
+    result = supabase.table("quizzes").insert({
+        "teacher_id": teacher_id,
+        "subject_id": subject_id,
+        "title": title,
+        "questions": questions,
+    }).execute()
+    return result.data[0]
+
+
+async def get_quizzes(teacher_id: str, subject_id: str) -> list[dict]:
+    supabase = get_supabase()
+    result = (
+        supabase.table("quizzes")
+        .select("*")
+        .eq("teacher_id", teacher_id)
+        .eq("subject_id", subject_id)
+        .order("created_at", desc=True)
+        .execute()
+    )
+    return result.data

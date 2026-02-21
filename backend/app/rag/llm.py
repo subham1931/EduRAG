@@ -59,14 +59,37 @@ async def generate_quiz_json(context: str, topic: str, num_questions: int) -> li
 async def generate_notes_text(context: str, topic: str) -> str:
     system_prompt = (
         "You are a note-generation assistant for teachers. "
-        "Generate clear, concise, well-structured notes in bullet-point format. "
-        "Use markdown formatting with headers and sub-bullets."
+        "You MUST generate well-structured, organized study notes using markdown.\n\n"
+        "STRICT FORMATTING RULES:\n"
+        "1. Use # for the main title\n"
+        "2. Use ## for major section headings\n"
+        "3. Under each section, use numbered lists (1. 2. 3.) with **bold text** for main points\n"
+        "4. Under each numbered point, use bullet points (- ) for sub-details\n"
+        "5. Use **bold** for key terms, definitions, and important words\n"
+        "6. Use `code` formatting for any code examples\n"
+        "7. Use --- (horizontal rule) to separate major sections\n"
+        "8. Keep each point concise — 1 sentence max\n"
+        "9. NEVER write long paragraphs. Every piece of information must be a numbered point or bullet\n"
+        "10. Add line breaks between sections for readability\n"
     )
 
     topic_instruction = f" Focus on the topic: {topic}." if topic else ""
     prompt = (
         f"Based on the following teaching material, generate comprehensive "
-        f"study notes in bullet format.{topic_instruction}\n\n"
+        f"study notes.{topic_instruction}\n\n"
+        f"You MUST follow this exact format:\n\n"
+        f"# Main Title\n\n"
+        f"## Section Name\n\n"
+        f"1. **Main Point One**\n"
+        f"   - Detail or sub-point\n"
+        f"   - Another detail\n\n"
+        f"2. **Main Point Two**\n"
+        f"   - Detail or sub-point\n"
+        f"   - Example: `code here`\n\n"
+        f"---\n\n"
+        f"## Next Section\n\n"
+        f"1. **Point**\n"
+        f"   - Detail\n\n"
         f"Context:\n{context}"
     )
 

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState, useRef, useEffect, useCallback } from "react";
 import ReactMarkdown from "react-markdown";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -17,17 +17,55 @@ export function ChatPanel({ subject }: ChatPanelProps) {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
+  const [initialLoading, setInitialLoading] = useState(true);
   const scrollRef = useRef<HTMLDivElement>(null);
 
-  useEffect(() => {
-    setMessages([]);
+  const loadMessages = useCallback(async () => {
+    setInitialLoading(true);
+    try {
+      const { data } = await api.get(`/chats/${subject.id}`);
+      setMessages(
+        data.map((m: any) => ({
+          id: m.id,
+          role: m.role,
+          content: m.content,
+          sources: m.sources,
+          timestamp: new Date(m.created_at),
+        }))
+      );
+    } catch (err) {
+      console.error("Failed to load chats:", err);
+    } finally {
+      setInitialLoading(false);
+    }
   }, [subject.id]);
+
+  useEffect(() => {
+    loadMessages();
+  }, [loadMessages]);
 
   useEffect(() => {
     if (scrollRef.current) {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
   }, [messages]);
+
+  const persistMessage = async (
+    role: string,
+    content: string,
+    sources?: any[]
+  ) => {
+    try {
+      await api.post("/chats", {
+        subject_id: subject.id,
+        role,
+        content,
+        sources: sources || null,
+      });
+    } catch (err) {
+      console.error("Failed to save chat message:", err);
+    }
+  };
 
   const handleSend = async () => {
     const question = input.trim();
@@ -44,6 +82,8 @@ export function ChatPanel({ subject }: ChatPanelProps) {
     setInput("");
     setLoading(true);
 
+    await persistMessage("user", question);
+
     try {
       const { data } = await api.post("/ask", {
         subject_id: subject.id,
@@ -59,16 +99,19 @@ export function ChatPanel({ subject }: ChatPanelProps) {
       };
 
       setMessages((prev) => [...prev, aiMsg]);
+      await persistMessage("assistant", data.answer, data.sources);
     } catch (err: any) {
+      const errContent =
+        err.response?.data?.detail ||
+        "Something went wrong. Please try again.";
       const errMsg: ChatMessage = {
         id: crypto.randomUUID(),
         role: "assistant",
-        content:
-          err.response?.data?.detail ||
-          "Something went wrong. Please try again.",
+        content: errContent,
         timestamp: new Date(),
       };
       setMessages((prev) => [...prev, errMsg]);
+      await persistMessage("assistant", errContent);
     } finally {
       setLoading(false);
     }
@@ -85,7 +128,11 @@ export function ChatPanel({ subject }: ChatPanelProps) {
     <div className="flex h-full flex-col">
       <ScrollArea className="flex-1 p-4" ref={scrollRef}>
         <div className="mx-auto max-w-3xl space-y-4">
-          {messages.length === 0 && (
+          {initialLoading ? (
+            <div className="flex h-64 items-center justify-center">
+              <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+            </div>
+          ) : messages.length === 0 ? (
             <div className="flex h-64 items-center justify-center">
               <div className="text-center text-muted-foreground">
                 <Bot className="mx-auto mb-3 h-12 w-12 opacity-30" />
@@ -97,7 +144,7 @@ export function ChatPanel({ subject }: ChatPanelProps) {
                 </p>
               </div>
             </div>
-          )}
+          ) : null}
 
           {messages.map((msg) => (
             <div
