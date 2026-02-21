@@ -27,7 +27,7 @@ export default function DashboardPage() {
   ];
 
   return (
-    <main className="mx-auto max-w-7xl px-4 py-10 sm:px-6">
+    <main className="h-full overflow-auto"><div className="mx-auto max-w-7xl px-4 py-10 sm:px-6">
       {/* Header */}
       <div className="mb-10">
         <div className="mb-2 inline-flex items-center gap-2 rounded-full border bg-background px-4 py-1.5 text-sm text-muted-foreground">
@@ -105,6 +105,6 @@ export default function DashboardPage() {
           })}
         </div>
       )}
-    </main>
+    </div></main>
   );
 }

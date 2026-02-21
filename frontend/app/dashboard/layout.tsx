@@ -63,7 +63,7 @@ export default function DashboardLayout({
     <DashboardContext.Provider value={{ subjects, fetchSubjects }}>
       <div className="flex h-screen flex-col bg-background">
         <Navbar onSubjectCreated={fetchSubjects} />
-        <div className="flex-1 overflow-auto">{children}</div>
+        <div className="flex-1 overflow-hidden">{children}</div>
       </div>
     </DashboardContext.Provider>
   );
