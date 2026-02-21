@@ -2,7 +2,6 @@
 
 import React, { useEffect, useState } from "react";
 import Link from "next/link";
-import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useTheme } from "next-themes";
 import { supabase } from "@/lib/supabase";
@@ -206,43 +205,50 @@ export default function LandingPage() {
               </div>
             </div>
 
-            {/* Hero illustration */}
-            <div className="relative hidden lg:flex items-center justify-center">
-              <Image
-                src="/images/graduation-hat.png"
-                alt="Graduation hat illustration"
-                width={420}
-                height={420}
-                className="drop-shadow-2xl"
-                priority
-              />
-
-              {/* Floating card - Quiz */}
-              <div className="absolute -left-4 bottom-16 rounded-xl border bg-card p-4 shadow-lg">
-                <div className="flex items-center gap-2">
-                  <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-green-500/10">
-                    <HelpCircle className="h-4 w-4 text-green-500" />
+            {/* Hero illustration — UI mockup */}
+            <div className="relative hidden lg:block">
+              <div className="relative mx-auto w-full max-w-md">
+                <div className="rounded-2xl border bg-card p-6 shadow-2xl shadow-primary/10">
+                  <div className="mb-4 flex items-center gap-3">
+                    <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10">
+                      <Brain className="h-5 w-5 text-primary" />
+                    </div>
+                    <div>
+                      <p className="text-sm font-semibold">EduRAG Assistant</p>
+                      <p className="text-xs text-muted-foreground">Physics 101</p>
+                    </div>
                   </div>
-                  <div>
-                    <p className="text-xs font-medium">Quiz Generated</p>
-                    <p className="text-xs text-muted-foreground">
-                      10 MCQs ready
-                    </p>
+                  <div className="space-y-3">
+                    <div className="ml-auto max-w-[75%] rounded-xl rounded-br-sm bg-primary px-4 py-2.5 text-sm text-primary-foreground">
+                      What is Newton&apos;s third law?
+                    </div>
+                    <div className="max-w-[85%] rounded-xl rounded-bl-sm bg-muted px-4 py-2.5 text-sm">
+                      Newton&apos;s Third Law states that for every action, there is an equal and opposite reaction...
+                    </div>
                   </div>
                 </div>
-              </div>
 
-              {/* Floating card - Upload */}
-              <div className="absolute -right-4 top-16 rounded-xl border bg-card p-4 shadow-lg">
-                <div className="flex items-center gap-2">
-                  <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-500/10">
-                    <Upload className="h-4 w-4 text-blue-500" />
+                <div className="absolute -left-12 bottom-8 rounded-xl border bg-card p-4 shadow-lg">
+                  <div className="flex items-center gap-2">
+                    <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-green-500/10">
+                      <HelpCircle className="h-4 w-4 text-green-500" />
+                    </div>
+                    <div>
+                      <p className="text-xs font-medium">Quiz Generated</p>
+                      <p className="text-xs text-muted-foreground">10 MCQs ready</p>
+                    </div>
                   </div>
-                  <div>
-                    <p className="text-xs font-medium">PDF Uploaded</p>
-                    <p className="text-xs text-muted-foreground">
-                      Indexed & ready
-                    </p>
+                </div>
+
+                <div className="absolute -right-8 top-12 rounded-xl border bg-card p-4 shadow-lg">
+                  <div className="flex items-center gap-2">
+                    <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-500/10">
+                      <Upload className="h-4 w-4 text-blue-500" />
+                    </div>
+                    <div>
+                      <p className="text-xs font-medium">PDF Uploaded</p>
+                      <p className="text-xs text-muted-foreground">Indexed & ready</p>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -305,15 +311,45 @@ export default function LandingPage() {
               </Link>
             </div>
 
-            {/* Feature illustration */}
-            <div className="relative hidden lg:flex items-center justify-center">
-              <Image
-                src="/images/laptop.png"
-                alt="Laptop dashboard illustration"
-                width={450}
-                height={450}
-                className="drop-shadow-2xl"
-              />
+            {/* Feature illustration — file list mockup */}
+            <div className="relative hidden lg:block">
+              <div className="rounded-2xl border bg-card p-1 shadow-xl">
+                <div className="rounded-xl bg-muted/50 p-6">
+                  <div className="mb-4 flex items-center gap-2 text-sm font-medium">
+                    <BookOpen className="h-4 w-4 text-primary" />
+                    Subject: Organic Chemistry
+                  </div>
+                  <div className="space-y-3">
+                    <div className="rounded-lg border bg-card p-3">
+                      <div className="flex items-center gap-2">
+                        <FileText className="h-4 w-4 text-blue-500" />
+                        <span className="text-sm">chapter_3_bonds.pdf</span>
+                        <span className="ml-auto rounded-full bg-green-500/10 px-2 py-0.5 text-xs text-green-600 dark:text-green-400">
+                          Indexed
+                        </span>
+                      </div>
+                    </div>
+                    <div className="rounded-lg border bg-card p-3">
+                      <div className="flex items-center gap-2">
+                        <FileText className="h-4 w-4 text-blue-500" />
+                        <span className="text-sm">reactions_notes.pdf</span>
+                        <span className="ml-auto rounded-full bg-green-500/10 px-2 py-0.5 text-xs text-green-600 dark:text-green-400">
+                          Indexed
+                        </span>
+                      </div>
+                    </div>
+                    <div className="rounded-lg border bg-card p-3">
+                      <div className="flex items-center gap-2">
+                        <FileText className="h-4 w-4 text-blue-500" />
+                        <span className="text-sm">lab_manual_2024.pdf</span>
+                        <span className="ml-auto rounded-full bg-primary/10 px-2 py-0.5 text-xs text-primary">
+                          Processing...
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -323,15 +359,6 @@ export default function LandingPage() {
       <section id="how-it-works" className="py-20">
         <div className="mx-auto max-w-7xl px-4 sm:px-6">
           <div className="mx-auto max-w-2xl text-center">
-            <div className="mb-6 flex justify-center">
-              <Image
-                src="/images/test-list.png"
-                alt="Quiz and test illustration"
-                width={140}
-                height={140}
-                className="drop-shadow-lg"
-              />
-            </div>
             <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">
               Top-notch AI, limitless learning
             </h2>
