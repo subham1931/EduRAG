@@ -61,7 +61,7 @@ export default function SubjectPage() {
       {/* ── Left: Subject Content ── */}
       <div className="flex flex-1 flex-col overflow-auto border-r">
         {/* Subject header */}
-        <div className="flex items-center justify-between border-b bg-muted/30 px-5 py-3">
+        <div className="flex items-center justify-between border-b bg-muted/30 px-4 py-3 sm:px-6">
           <div className="flex items-center gap-3">
             <Button
               variant="ghost"
@@ -95,7 +95,7 @@ export default function SubjectPage() {
         </div>
 
         {/* Documents grid */}
-        <div className="flex-1 p-5">
+        <div className="flex-1 p-4 sm:p-6">
           {documents.length === 0 ? (
             <div className="flex h-full flex-col items-center justify-center rounded-2xl border-2 border-dashed border-muted-foreground/20">
               <div className="mb-3 flex h-14 w-14 items-center justify-center rounded-2xl bg-muted">

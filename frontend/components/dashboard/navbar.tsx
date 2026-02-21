@@ -73,7 +73,7 @@ export function Navbar({ onSubjectCreated }: NavbarProps) {
 
   return (
     <nav className="sticky top-0 z-50 border-b bg-background/80 backdrop-blur-md">
-      <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6">
+      <div className="flex h-16 items-center justify-between px-4 sm:px-6">
         <Link href="/dashboard" className="flex items-center gap-2.5">
           <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary/10">
             <GraduationCap className="h-5 w-5 text-primary" />
