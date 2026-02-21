@@ -3,8 +3,15 @@
 import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { useTheme } from "next-themes";
 import { supabase } from "@/lib/supabase";
 import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import {
   GraduationCap,
   BookOpen,
@@ -19,14 +26,20 @@ import {
   Zap,
   Shield,
   MessageSquare,
+  Sun,
+  Moon,
+  Monitor,
 } from "lucide-react";
 
 export default function LandingPage() {
   const router = useRouter();
   const [loggedIn, setLoggedIn] = useState(false);
   const [checking, setChecking] = useState(true);
+  const [mounted, setMounted] = useState(false);
+  const { theme, setTheme } = useTheme();
 
   useEffect(() => {
+    setMounted(true);
     supabase.auth.getSession().then(({ data: { session } }) => {
       setLoggedIn(!!session);
       setChecking(false);
@@ -71,6 +84,39 @@ export default function LandingPage() {
           </div>
 
           <div className="flex items-center gap-3">
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="icon" className="h-9 w-9">
+                  {mounted ? (
+                    theme === "dark" ? (
+                      <Moon className="h-4 w-4" />
+                    ) : theme === "light" ? (
+                      <Sun className="h-4 w-4" />
+                    ) : (
+                      <Monitor className="h-4 w-4" />
+                    )
+                  ) : (
+                    <Sun className="h-4 w-4" />
+                  )}
+                  <span className="sr-only">Toggle theme</span>
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem onClick={() => setTheme("light")}>
+                  <Sun className="mr-2 h-4 w-4" />
+                  Light
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setTheme("dark")}>
+                  <Moon className="mr-2 h-4 w-4" />
+                  Dark
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setTheme("system")}>
+                  <Monitor className="mr-2 h-4 w-4" />
+                  System
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+
             {loggedIn ? (
               <Button onClick={() => router.push("/dashboard")}>
                 Dashboard
