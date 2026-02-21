@@ -82,10 +82,17 @@ export function QuizDialog({ subject }: QuizDialogProps) {
       }}
     >
       <DialogTrigger asChild>
-        <Button variant="outline" size="sm">
-          <HelpCircle className="mr-2 h-4 w-4" />
-          Generate Quiz
-        </Button>
+        <button className="flex w-full items-center gap-3 rounded-xl border bg-card p-3.5 text-left transition-all hover:shadow-md hover:shadow-primary/5">
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-purple-500/10">
+            <HelpCircle className="h-5 w-5 text-purple-500" />
+          </div>
+          <div>
+            <p className="text-sm font-semibold">Generate Quiz</p>
+            <p className="text-xs text-muted-foreground">
+              Create MCQs from your materials
+            </p>
+          </div>
+        </button>
       </DialogTrigger>
       <DialogContent className="max-w-2xl">
         <DialogHeader>
