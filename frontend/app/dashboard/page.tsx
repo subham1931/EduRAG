@@ -65,7 +65,7 @@ export default function DashboardPage() {
               <button
                 key={subject.id}
                 onClick={() => router.push(`/dashboard/${subject.id}`)}
-                className={`group relative flex flex-col rounded-xl border bg-gradient-to-br p-5 text-left transition-all hover:scale-[1.02] hover:shadow-lg hover:shadow-black/20 ${colorClass}`}
+                className={`group relative flex flex-col rounded-xl border bg-gradient-to-br p-5 text-left transition-all hover:scale-[1.02] hover:shadow-lg hover:shadow-primary/10 ${colorClass}`}
               >
                 <div className="mb-4 flex items-start justify-between">
                   <div
