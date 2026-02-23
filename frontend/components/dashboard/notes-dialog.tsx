@@ -105,7 +105,7 @@ export function NotesDialog({ subject, onGenerated }: NotesDialogProps) {
           Generate Notes
         </Button>
       </DialogTrigger>
-      <DialogContent className="max-w-2xl">
+      <DialogContent className="max-w-6xl h-[90vh]">
         <DialogHeader>
           <DialogTitle>Notes — {subject.name}</DialogTitle>
           <DialogDescription>
@@ -157,7 +157,7 @@ export function NotesDialog({ subject, onGenerated }: NotesDialogProps) {
               </Button>
             </div>
 
-            <ScrollArea className="h-[60vh]">
+            <ScrollArea className="flex-1">
               <div className="prose dark:prose-invert max-w-none pr-4 prose-h1:text-xl prose-h1:font-bold prose-h1:mb-4 prose-h2:text-lg prose-h2:font-semibold prose-h2:mt-6 prose-h2:mb-3 prose-h2:text-primary prose-h3:text-base prose-h3:font-medium prose-h3:mt-4 prose-h3:mb-2 prose-ol:my-2 prose-ol:space-y-2 prose-ul:my-1 prose-ul:space-y-1 prose-li:my-0 prose-li:leading-relaxed prose-strong:text-foreground prose-code:rounded prose-code:bg-muted prose-code:px-1.5 prose-code:py-0.5 prose-code:text-sm prose-code:font-mono prose-hr:my-6 prose-hr:border-border prose-p:my-1 prose-p:leading-relaxed">
                 <ReactMarkdown>{notes}</ReactMarkdown>
               </div>

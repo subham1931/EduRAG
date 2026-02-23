@@ -41,12 +41,16 @@ export default function LandingPage() {
   useEffect(() => {
     setMounted(true);
     supabase.auth.getSession().then(({ data: { session } }) => {
-      setLoggedIn(!!session);
-      setChecking(false);
+      if (session) {
+        router.replace("/dashboard");
+      } else {
+        setLoggedIn(false);
+        setChecking(false);
+      }
     });
-  }, []);
+  }, [router]);
 
-  const ctaHref = loggedIn ? "/dashboard" : "/register";
+  const ctaHref = "/register";
 
   if (checking) {
     return (

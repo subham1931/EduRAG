@@ -83,6 +83,12 @@ class SaveQuizRequest(BaseModel):
     questions: list[dict]
 
 
+class UpdateQuizRequest(BaseModel):
+    quiz_id: str
+    title: str = "General"
+    questions: list[dict]
+
+
 class SaveNotesRequest(BaseModel):
     subject_id: str
     title: str = "General"

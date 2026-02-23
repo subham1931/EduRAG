@@ -10,6 +10,7 @@ import { ChatPanel } from "@/components/dashboard/chat-panel";
 import { UploadDialog } from "@/components/dashboard/upload-dialog";
 import { QuizDialog } from "@/components/dashboard/quiz-dialog";
 import { NotesDialog } from "@/components/dashboard/notes-dialog";
+import { QuizViewerDialog } from "@/components/dashboard/quiz-viewer-dialog";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import {
@@ -28,7 +29,6 @@ import {
   FileText,
   Clock,
   Sparkles,
-  CheckCircle2,
 } from "lucide-react";
 
 interface GeneratedItem {
@@ -299,81 +299,35 @@ export default function SubjectPage() {
         </div>
       </div>
 
-      {/* ── Viewer Dialog ── */}
-      <Dialog open={!!viewItem} onOpenChange={(open) => !open && setViewItem(null)}>
-        <DialogContent className="max-w-4xl">
-          {viewItem?.type === "quiz" && (
-            <>
-              <DialogHeader>
-                <DialogTitle>Quiz — {viewItem.topic}</DialogTitle>
-                <DialogDescription>
-                  {viewItem.questions?.length || 0} questions
-                </DialogDescription>
-              </DialogHeader>
-              <ScrollArea className="h-[60vh]">
-                <div className="space-y-4 pr-4">
-                  {viewItem.questions?.map((q, qIdx) => (
-                    <div key={qIdx} className="rounded-lg border bg-card p-4">
-                      <div className="mb-3 flex items-start gap-2">
-                        <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary/10 text-xs font-bold text-primary">
-                          {qIdx + 1}
-                        </span>
-                        <p className="text-sm font-medium leading-relaxed">
-                          {q.question}
-                        </p>
-                      </div>
-                      <div className="ml-8 space-y-1.5">
-                        {q.options.slice(0, 4).map((opt, oIdx) => {
-                          const isCorrect = q.correct_answer === opt;
-                          const label = String.fromCharCode(97 + oIdx);
-                          return (
-                            <div
-                              key={oIdx}
-                              className={`flex items-center gap-2.5 rounded-md border px-3 py-2 text-sm ${
-                                isCorrect
-                                  ? "border-green-500/50 bg-green-500/10 text-green-500 dark:text-green-400"
-                                  : "border-border text-muted-foreground"
-                              }`}
-                            >
-                              <span
-                                className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-xs font-semibold ${
-                                  isCorrect
-                                    ? "bg-green-500/20 text-green-500"
-                                    : "bg-muted text-muted-foreground"
-                                }`}
-                              >
-                                {label}
-                              </span>
-                              {isCorrect && (
-                                <CheckCircle2 className="h-4 w-4 shrink-0 text-green-500" />
-                              )}
-                              <span>{opt}</span>
-                            </div>
-                          );
-                        })}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </ScrollArea>
-            </>
-          )}
+      {/* ── Quiz Viewer ── */}
+      {viewItem?.type === "quiz" && (
+        <QuizViewerDialog
+          open
+          onClose={() => setViewItem(null)}
+          quizId={viewItem.id}
+          subjectId={subjectId}
+          topic={viewItem.topic}
+          initialQuestions={viewItem.questions || []}
+          onUpdated={fetchGeneratedContent}
+        />
+      )}
 
-          {viewItem?.type === "notes" && (
-            <>
-              <DialogHeader>
-                <DialogTitle>Notes — {viewItem.topic}</DialogTitle>
-                <DialogDescription>Study notes</DialogDescription>
-              </DialogHeader>
-              <ScrollArea className="h-[70vh]">
-                <div className="prose dark:prose-invert max-w-none pr-4 prose-h1:text-xl prose-h1:font-bold prose-h1:mb-4 prose-h2:text-lg prose-h2:font-semibold prose-h2:mt-6 prose-h2:mb-3 prose-h2:text-primary prose-h3:text-base prose-h3:font-medium prose-h3:mt-4 prose-h3:mb-2 prose-ol:my-2 prose-ol:space-y-2 prose-ul:my-1 prose-ul:space-y-1 prose-li:my-0 prose-li:leading-relaxed prose-strong:text-foreground prose-code:rounded prose-code:bg-muted prose-code:px-1.5 prose-code:py-0.5 prose-code:text-sm prose-code:font-mono prose-hr:my-6 prose-hr:border-border prose-p:my-1 prose-p:leading-relaxed">
-                  <ReactMarkdown>{viewItem.content || ""}</ReactMarkdown>
-                </div>
-              </ScrollArea>
-            </>
-          )}
-        </DialogContent>
-      </Dialog>
+      {/* ── Notes Viewer ── */}
+      {viewItem?.type === "notes" && (
+        <Dialog open onOpenChange={() => setViewItem(null)}>
+          <DialogContent className="flex max-w-6xl flex-col h-[90vh]">
+            <DialogHeader>
+              <DialogTitle>Notes — {viewItem.topic}</DialogTitle>
+              <DialogDescription>Study notes</DialogDescription>
+            </DialogHeader>
+            <ScrollArea className="flex-1">
+              <div className="prose dark:prose-invert max-w-none pr-4 prose-h1:text-xl prose-h1:font-bold prose-h1:mb-4 prose-h2:text-lg prose-h2:font-semibold prose-h2:mt-6 prose-h2:mb-3 prose-h2:text-primary prose-h3:text-base prose-h3:font-medium prose-h3:mt-4 prose-h3:mb-2 prose-ol:my-2 prose-ol:space-y-2 prose-ul:my-1 prose-ul:space-y-1 prose-li:my-0 prose-li:leading-relaxed prose-strong:text-foreground prose-code:rounded prose-code:bg-muted prose-code:px-1.5 prose-code:py-0.5 prose-code:text-sm prose-code:font-mono prose-hr:my-6 prose-hr:border-border prose-p:my-1 prose-p:leading-relaxed">
+                <ReactMarkdown>{viewItem.content || ""}</ReactMarkdown>
+              </div>
+            </ScrollArea>
+          </DialogContent>
+        </Dialog>
+      )}
     </div>
   );
 }

@@ -131,7 +131,7 @@ export function QuizDialog({ subject, onGenerated }: QuizDialogProps) {
           Generate Quiz
         </Button>
       </DialogTrigger>
-      <DialogContent className="max-w-2xl">
+      <DialogContent className="max-w-6xl h-[90vh]">
         <DialogHeader>
           <DialogTitle>Quiz — {subject.name}</DialogTitle>
           <DialogDescription>
@@ -168,7 +168,7 @@ export function QuizDialog({ subject, onGenerated }: QuizDialogProps) {
           </div>
         ) : (
           <div className="space-y-4">
-            <ScrollArea className="h-[60vh]">
+            <ScrollArea className="flex-1">
               <div className="space-y-4 pr-4">
                 {questions.map((q, qIdx) => (
                   <div

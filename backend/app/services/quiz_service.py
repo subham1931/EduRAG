@@ -46,6 +46,23 @@ async def save_quiz(
     return result.data[0]
 
 
+async def update_quiz(
+    quiz_id: str,
+    teacher_id: str,
+    title: str,
+    questions: list[dict],
+) -> dict:
+    supabase = get_supabase()
+    result = (
+        supabase.table("quizzes")
+        .update({"title": title, "questions": questions})
+        .eq("id", quiz_id)
+        .eq("teacher_id", teacher_id)
+        .execute()
+    )
+    return result.data[0] if result.data else {}
+
+
 async def get_quizzes(teacher_id: str, subject_id: str) -> list[dict]:
     supabase = get_supabase()
     result = (
