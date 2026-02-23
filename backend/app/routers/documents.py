@@ -1,6 +1,10 @@
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form
 from app.models.schemas import DocumentResponse, TokenPayload
-from app.services.document_service import process_and_store_pdf, get_documents
+from app.services.document_service import (
+    process_and_store_pdf,
+    get_documents,
+    delete_document,
+)
 from app.services.subject_service import get_subject_by_id
 from app.utils.auth import get_current_teacher
 
@@ -37,5 +41,21 @@ async def list_documents(
 ):
     try:
         return await get_documents(subject_id, teacher.sub)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.delete("/{document_id}")
+async def delete_document_endpoint(
+    document_id: str,
+    teacher: TokenPayload = Depends(get_current_teacher),
+):
+    try:
+        success = await delete_document(document_id, teacher.sub)
+        if not success:
+            raise HTTPException(status_code=404, detail="Document not found")
+        return {"message": "Document deleted successfully"}
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))

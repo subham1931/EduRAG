@@ -71,3 +71,15 @@ async def get_documents(subject_id: str, teacher_id: str) -> list[dict]:
         .execute()
     )
     return result.data
+
+
+async def delete_document(document_id: str, teacher_id: str) -> bool:
+    supabase = get_supabase()
+    result = (
+        supabase.table("documents")
+        .delete()
+        .eq("id", document_id)
+        .eq("teacher_id", teacher_id)
+        .execute()
+    )
+    return len(result.data) > 0

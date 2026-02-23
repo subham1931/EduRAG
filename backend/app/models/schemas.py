@@ -17,6 +17,11 @@ class SubjectCreate(BaseModel):
     description: Optional[str] = None
 
 
+class SubjectUpdate(BaseModel):
+    name: Optional[str] = Field(None, min_length=1, max_length=200)
+    description: Optional[str] = None
+
+
 class SubjectResponse(BaseModel):
     id: str
     teacher_id: str
