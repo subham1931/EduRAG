@@ -206,35 +206,49 @@ export default function SubjectPage() {
             </div>
             <QuizDialog subject={subject!} onGenerated={handleQuizGenerated} />
           </div>
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
             {quizzes.length === 0 ? (
-              <div className="col-span-full py-20 border-2 border-dashed rounded-3xl flex flex-col items-center justify-center text-muted-foreground bg-muted/5">
-                <HelpCircle className="h-12 w-12 mb-4 opacity-20" />
-                <p className="font-medium text-lg">No questions generated yet.</p>
-                <p className="text-sm text-center max-w-xs mt-1">Generate evaluation questions using the button above to test your skills.</p>
+              <div className="col-span-full py-20 flex flex-col items-center justify-center text-muted-foreground">
+                <Sparkles className="h-10 w-10 mb-4 opacity-20" />
+                <p className="font-medium text-lg">No assessments created yet.</p>
+                <p className="text-sm text-center max-w-xs mt-1">Generate evaluation questions using the button above to begin your journey.</p>
               </div>
             ) : (
               quizzes.map(quiz => (
-                <div key={quiz.id} className="p-6 rounded-2xl border bg-card hover:border-primary/50 transition-all flex flex-col shadow-sm group">
-                  <div className="flex items-center justify-between mb-4">
-                    <div className="p-2.5 rounded-xl bg-orange-500/10 text-orange-500">
-                      <HelpCircle className="h-6 w-6" />
+                <Link key={quiz.id} href={`/dashboard/${subjectId}/quizzes/${quiz.id}`} className="block h-full">
+                  <div className="p-4 rounded-[1.5rem] border bg-card/50 hover:bg-card hover:border-primary/40 hover:shadow-xl hover:shadow-primary/5 transition-all duration-500 flex flex-col group h-full relative overflow-hidden">
+                    {/* Subtle background decoration */}
+                    <div className="absolute -top-6 -right-6 p-4 opacity-0 group-hover:opacity-5 transition-all duration-700 rotate-12 group-hover:rotate-0">
+                      <Sparkles className="h-20 w-20 text-primary" />
                     </div>
-                    <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/60">
-                      {quiz.timestamp.toLocaleDateString()}
-                    </span>
+
+                    <div className="flex items-center justify-between mb-4 relative z-10">
+                      <div className="p-2 rounded-xl bg-primary/10 text-primary group-hover:bg-primary group-hover:text-primary-foreground transition-all duration-500 shadow-sm">
+                        <Sparkles className="h-4 w-4" />
+                      </div>
+                      <span className="text-[9px] font-bold text-muted-foreground/50">
+                        {quiz.timestamp.toLocaleDateString()}
+                      </span>
+                    </div>
+
+                    <div className="relative z-10 flex-1">
+                      <h3 className="text-base font-black mb-1 tracking-tight group-hover:text-primary transition-colors duration-300 line-clamp-1">
+                        {quiz.topic}
+                      </h3>
+                      <div className="flex items-center gap-1.5">
+                        <div className="h-1 w-1 rounded-full bg-emerald-500 animate-pulse" />
+                        <p className="text-[9px] font-black uppercase tracking-widest text-muted-foreground/50">
+                          {quiz.detail}
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="mt-4 pt-3 border-t border-border/50 flex items-center justify-between relative z-10 opacity-0 group-hover:opacity-100 transition-all duration-500 translate-y-1 group-hover:translate-y-0 text-primary">
+                      <span className="text-[9px] font-black uppercase tracking-widest">Open</span>
+                      <ArrowRight className="h-3 w-3" />
+                    </div>
                   </div>
-                  <h3 className="text-lg font-bold mb-1 truncate">{quiz.topic}</h3>
-                  <p className="text-sm text-muted-foreground mb-6">{quiz.detail}</p>
-                  <Link href={`/dashboard/${subjectId}/quizzes/${quiz.id}`} className="w-full">
-                    <Button
-                      className="w-full rounded-xl gap-2 font-bold"
-                    >
-                      Review Questions
-                      <ArrowRight className="h-4 w-4" />
-                    </Button>
-                  </Link>
-                </div>
+                </Link>
               ))
             )}
           </div>
@@ -255,7 +269,7 @@ export default function SubjectPage() {
           </div>
           <div className="grid gap-6 md:grid-cols-2">
             {notes.length === 0 ? (
-              <div className="col-span-full py-20 border-2 border-dashed rounded-3xl flex flex-col items-center justify-center text-muted-foreground bg-muted/5">
+              <div className="col-span-full py-20 flex flex-col items-center justify-center text-muted-foreground">
                 <FileText className="h-12 w-12 mb-4 opacity-20" />
                 <p className="font-medium text-lg">No study notes found.</p>
                 <p className="text-sm text-center max-w-xs mt-1">Ask the AI to generate notes to help you review key topics.</p>
@@ -306,7 +320,7 @@ export default function SubjectPage() {
             </Button>
           </div>
 
-          <div className="p-20 border-2 border-dashed rounded-3xl flex flex-col items-center justify-center text-center space-y-4 bg-muted/5">
+          <div className="p-20 flex flex-col items-center justify-center text-center space-y-4">
             <div className="p-4 rounded-full bg-primary/5">
               <Users className="h-10 w-10 text-primary/30" />
             </div>
@@ -333,7 +347,7 @@ export default function SubjectPage() {
           </div>
           <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
             {documents.length === 0 ? (
-              <div className="col-span-full py-20 border-2 border-dashed rounded-2xl flex flex-col items-center justify-center text-muted-foreground">
+              <div className="col-span-full py-20 flex flex-col items-center justify-center text-muted-foreground">
                 <Files className="h-12 w-12 mb-4 opacity-20" />
                 <p>No documents found. Start by uploading one!</p>
               </div>
@@ -375,10 +389,10 @@ export default function SubjectPage() {
                 </div>
               </div>
               <div className="p-4 rounded-xl border bg-card shadow-sm hover:shadow-md transition-shadow">
-                <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider mb-1">Quizzes</p>
+                <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider mb-1">Assessments</p>
                 <div className="flex items-end justify-between">
                   <span className="text-2xl font-bold">{generatedItems.filter(i => i.type === "quiz").length}</span>
-                  <div className="text-orange-500 bg-orange-500/10 p-2 rounded-lg"><HelpCircle className="h-4 w-4" /></div>
+                  <div className="text-primary bg-primary/10 p-2 rounded-lg"><Sparkles className="h-4 w-4" /></div>
                 </div>
               </div>
               <div className="p-4 rounded-xl border bg-card shadow-sm hover:shadow-md transition-shadow">

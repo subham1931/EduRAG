@@ -54,6 +54,7 @@ async def generate_response(prompt: str, system_prompt: str = "") -> str:
 async def generate_quiz_json(
     context: str, 
     topic: str, 
+    instructions: str,
     mcq_count: int,
     short_count: int,
     long_count: int,
@@ -67,26 +68,29 @@ async def generate_quiz_json(
         "- DO NOT generate general questions about the subject unless no specific topic is provided.\n"
         "- Ignore any information in the context that is irrelevant to the specified topic.\n\n"
         "QUESTION TYPES AND FORMATS:\n"
-        "1. MCQ (type: 'mcq'): { 'type': 'mcq', 'question': '...', 'options': ['A', 'B', 'C', 'D'], 'correct_answer': '...' }\n"
-        "2. SHORT (type: 'short'): { 'type': 'short', 'question': '...', 'correct_answer': '...' }\n"
-        "3. LONG (type: 'long'): { 'type': 'long', 'question': '...', 'correct_answer': '...' }\n"
-        "4. FILL BLANKS (type: 'fill_blanks'): { 'type': 'fill_blanks', 'question': '...', 'correct_answer': '...' }\n\n"
+        "1. MCQ (type: 'mcq'): { \"type\": \"mcq\", \"question\": \"...\", \"options\": [\"Option A\", \"Option B\", \"Option C\", \"Option D\"], \"correct_answer\": \"Option A\" }\n"
+        "2. SHORT (type: 'short'): { \"type\": \"short\", \"question\": \"...\", \"correct_answer\": \"... text key ...\" }\n"
+        "3. LONG (type: 'long'): { \"type\": \"long\", \"question\": \"...\", \"correct_answer\": \"... detailed key ...\" }\n"
+        "4. FILL BLANKS (type: 'fill_blanks'): { \"type\": \"fill_blanks\", \"question\": \"... statement with ____ ...\", \"correct_answer\": \"... missing word ...\" }\n\n"
         "STRICT RULES:\n"
+        "- The 'correct_answer' for MCQs MUST EXACTLY MATCH one of the strings in the 'options' array.\n"
         "- The 'correct_answer' for short/long should be a brief sample answer or key points.\n"
         "- For fill_blanks, use '____' in the question string.\n"
         "- For mcq, options must be exactly 4.\n"
         "- Return ONLY the JSON array. Do not include any explanatory text."
     )
 
-    topic_instruction = f"\n\nCRITICAL MANDATE: All questions MUST be strictly about the topic: '{topic}'. Do not include questions about any other topic." if topic else ""
+    topic_instruction = f"\n\nCRITICAL MANDATE: All questions MUST be strictly about the topic: '{topic}'." if topic else ""
+    style_instruction = f"\nADDITIONAL INSTRUCTIONS: {instructions}" if instructions else ""
+    
     prompt = (
-        f"Based on the following context, generate the following questions:{topic_instruction}\n\n"
+        f"Based on the following context, generate the following questions:{topic_instruction}{style_instruction}\n\n"
         f"- {mcq_count} Multiple Choice Questions\n"
         f"- {short_count} Short Answer Questions\n"
         f"- {long_count} Long Answer Questions\n"
         f"- {fill_blanks_count} Fill-in-the-Blanks Questions\n\n"
         f"Context:\n{context}\n\n"
-        f"Final Check: Ensure EVERY question is relevant to the topic '{topic or 'general concepts'}' before returning."
+        f"Final Check: Ensure EVERY question is relevant to the topic '{topic or 'general concepts'}' and follows style '{instructions or 'standard academic'}' before returning."
     )
 
     raw = await generate_response(prompt, system_prompt)

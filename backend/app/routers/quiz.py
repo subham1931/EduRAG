@@ -21,6 +21,7 @@ async def generate_quiz_endpoint(
             body.subject_id, 
             teacher.sub, 
             body.topic, 
+            body.instructions,
             body.mcq_count,
             body.short_count,
             body.long_count,
@@ -43,6 +44,7 @@ async def save_quiz_endpoint(
             teacher_id=teacher.sub,
             subject_id=body.subject_id,
             title=body.title,
+            description=body.description,
             questions=body.questions,
         )
         return result
@@ -60,6 +62,7 @@ async def update_quiz_endpoint(
             quiz_id=body.quiz_id,
             teacher_id=teacher.sub,
             title=body.title,
+            description=body.description,
             questions=body.questions,
         )
         return result

@@ -58,8 +58,12 @@ export function MiniSidebar() {
 
                     {navItems.map((item) => {
                         const targetTab = item.href.split("tab=")[1] || "overview";
+                        const isSubjectRoot = pathname === `/dashboard/${subjectId}`;
+
                         const isActive = subjectId
-                            ? (tab === targetTab && pathname.includes(subjectId))
+                            ? (isSubjectRoot && tab === targetTab) ||
+                            (item.label === "Questions" && pathname.includes("/quizzes/")) ||
+                            (item.label === "Study Notes" && pathname.includes("/notes/"))
                             : pathname === item.href;
 
                         return (

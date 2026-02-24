@@ -8,12 +8,15 @@ async def generate_quiz(
     subject_id: str,
     teacher_id: str,
     topic: str | None = None,
+    instructions: str | None = None,
     mcq_count: int = 5,
     short_count: int = 0,
     long_count: int = 0,
     fill_blanks_count: int = 0,
 ) -> dict:
     query = topic if topic else "key concepts and important topics"
+    if instructions:
+        query += f" ({instructions})"
     chunks = await retrieve_relevant_chunks(
         query, subject_id, teacher_id, top_k=10
     )
@@ -23,7 +26,7 @@ async def generate_quiz(
 
     context = format_context(chunks)
     questions = await generate_quiz_json(
-        context, topic or "", mcq_count, short_count, long_count, fill_blanks_count
+        context, topic or "", instructions or "", mcq_count, short_count, long_count, fill_blanks_count
     )
 
     subject = await get_subject_by_id(subject_id, teacher_id)
@@ -40,12 +43,14 @@ async def save_quiz(
     subject_id: str,
     title: str,
     questions: list[dict],
+    description: str = "",
 ) -> dict:
     supabase = get_supabase()
     result = supabase.table("quizzes").insert({
         "teacher_id": teacher_id,
         "subject_id": subject_id,
         "title": title,
+        "description": description,
         "questions": questions,
     }).execute()
     return result.data[0]
@@ -56,11 +61,16 @@ async def update_quiz(
     teacher_id: str,
     title: str,
     questions: list[dict],
+    description: str = None,
 ) -> dict:
     supabase = get_supabase()
+    update_data = {"title": title, "questions": questions}
+    if description is not None:
+        update_data["description"] = description
+        
     result = (
         supabase.table("quizzes")
-        .update({"title": title, "questions": questions})
+        .update(update_data)
         .eq("id", quiz_id)
         .eq("teacher_id", teacher_id)
         .execute()

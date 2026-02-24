@@ -56,6 +56,7 @@ class AskResponse(BaseModel):
 class QuizRequest(BaseModel):
     subject_id: str
     topic: Optional[str] = None
+    instructions: Optional[str] = None
     mcq_count: int = 5
     short_count: int = 0
     long_count: int = 0
@@ -87,12 +88,14 @@ class NotesResponse(BaseModel):
 class SaveQuizRequest(BaseModel):
     subject_id: str
     title: str = "General"
+    description: Optional[str] = None
     questions: list[dict]
 
 
 class UpdateQuizRequest(BaseModel):
     quiz_id: str
     title: str = "General"
+    description: Optional[str] = None
     questions: list[dict]
 
 

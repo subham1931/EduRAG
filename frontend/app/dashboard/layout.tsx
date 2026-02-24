@@ -17,6 +17,7 @@ export default function DashboardLayout({
 }) {
   const [authLoading, setAuthLoading] = useState(true);
   const [subjects, setSubjects] = useState<Subject[]>([]);
+  const [quizTitle, setQuizTitle] = useState<string | null>(null);
 
   const fetchSubjects = useCallback(async () => {
     try {
@@ -62,7 +63,7 @@ export default function DashboardLayout({
   }
 
   return (
-    <DashboardContext.Provider value={{ subjects, fetchSubjects }}>
+    <DashboardContext.Provider value={{ subjects, fetchSubjects, quizTitle, setQuizTitle }}>
       <div className="flex h-screen flex-col bg-background text-foreground overflow-hidden">
         {/* Global Navbar */}
         <Navbar onSubjectCreated={fetchSubjects} />

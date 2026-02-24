@@ -35,7 +35,7 @@ interface NavbarProps {
 export function Navbar({ onSubjectCreated }: NavbarProps) {
   const params = useParams();
   const subjectId = params.subjectId as string;
-  const { subjects } = useDashboard();
+  const { subjects, quizTitle } = useDashboard();
 
   const currentSubject = subjects.find(s => s.id === subjectId);
 
@@ -97,10 +97,18 @@ export function Navbar({ onSubjectCreated }: NavbarProps) {
               <ChevronRight className="h-4 w-4" />
               <Link
                 href={`/dashboard/${subjectId}`}
-                className="font-medium text-foreground hover:underline truncate max-w-[150px] sm:max-w-[250px]"
+                className={`font-medium truncate max-w-[150px] sm:max-w-[250px] transition-colors hover:text-foreground ${params.quizId ? "" : "text-foreground"}`}
               >
                 {currentSubject.name}
               </Link>
+              {params.quizId && quizTitle && (
+                <>
+                  <ChevronRight className="h-4 w-4" />
+                  <span className="font-medium text-foreground truncate max-w-[150px] sm:max-w-[250px]">
+                    {quizTitle}
+                  </span>
+                </>
+              )}
             </div>
           )}
         </div>
