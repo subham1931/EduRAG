@@ -26,8 +26,9 @@ export interface AskResponse {
 }
 
 export interface QuizQuestion {
+  type?: "mcq" | "short" | "long" | "fill_blanks";
   question: string;
-  options: string[];
+  options?: string[];
   correct_answer: string;
 }
 

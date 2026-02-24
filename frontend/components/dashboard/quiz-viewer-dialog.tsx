@@ -75,11 +75,11 @@ export function QuizViewerDialog({
           correct_answer: q.correct_answer,
         })),
       });
-      toast.success("Quiz updated successfully!");
+      toast.success("Assessment updated successfully!");
       setEditing(false);
       onUpdated();
     } catch {
-      toast.error("Failed to update quiz.");
+      toast.error("Failed to update questions.");
     } finally {
       setSaving(false);
     }
@@ -132,9 +132,9 @@ export function QuizViewerDialog({
         if (field === "question") return { ...q, question: value };
         if (field.startsWith("opt_")) {
           const optIdx = parseInt(field.split("_")[1]);
-          const newOpts = [...q.options];
+          const newOpts = [...(q.options || [])];
           newOpts[optIdx] = value;
-          const newCorrect = q.correct_answer === q.options[optIdx] ? value : q.correct_answer;
+          const newCorrect = q.correct_answer === (q.options?.[optIdx]) ? value : q.correct_answer;
           return { ...q, options: newOpts, correct_answer: newCorrect };
         }
         if (field === "correct") return { ...q, correct_answer: value };
@@ -147,8 +147,8 @@ export function QuizViewerDialog({
     <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
       <DialogContent className="flex max-w-6xl flex-col h-[90vh]">
         <DialogHeader>
-          <DialogTitle>Quiz — {topic}</DialogTitle>
-          <DialogDescription>{questions.length} questions</DialogDescription>
+          <DialogTitle>Questions — {topic}</DialogTitle>
+          <DialogDescription>{questions.length} questions total</DialogDescription>
         </DialogHeader>
 
         {/* Toolbar */}
@@ -159,7 +159,7 @@ export function QuizViewerDialog({
             onClick={() => setEditing(!editing)}
           >
             <Pencil className="mr-1.5 h-3.5 w-3.5" />
-            {editing ? "Editing" : "Edit"}
+            {editing ? "Editing Mode" : "Edit Questions"}
           </Button>
 
           <Button
@@ -246,11 +246,10 @@ export function QuizViewerDialog({
                 <div key={label} className="flex items-center gap-2">
                   <button
                     onClick={() => setNewQ({ ...newQ, correct: i })}
-                    className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-xs font-semibold ${
-                      newQ.correct === i
-                        ? "bg-green-500/20 text-green-500"
-                        : "bg-muted text-muted-foreground"
-                    }`}
+                    className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-xs font-semibold ${newQ.correct === i
+                      ? "bg-green-500/20 text-green-500"
+                      : "bg-muted text-muted-foreground"
+                      }`}
                   >
                     {label}
                   </button>
@@ -285,50 +284,53 @@ export function QuizViewerDialog({
           <div className="space-y-4 pr-4">
             {questions.map((q, qIdx) => (
               <div key={qIdx} className="relative rounded-lg border bg-card p-4">
-                {editing && (
-                  <button
-                    onClick={() => handleDeleteQuestion(qIdx)}
-                    className="absolute right-3 top-3 rounded-full p-1 text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </button>
-                )}
                 <div className="mb-3 flex items-start gap-2">
-                  <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary/10 text-xs font-bold text-primary">
+                  <span className="flex h-6 w-6 mt-1 shrink-0 items-center justify-center rounded-full bg-primary/10 text-xs font-bold text-primary">
                     {qIdx + 1}
                   </span>
-                  {editing ? (
-                    <Input
-                      value={q.question}
-                      onChange={(e) => updateQuestion(qIdx, "question", e.target.value)}
-                      className="h-8 flex-1 text-sm font-medium"
-                    />
-                  ) : (
-                    <p className="text-sm font-medium leading-relaxed">
-                      {q.question}
-                    </p>
-                  )}
+                  <div className="flex-1 flex items-start gap-2">
+                    {editing ? (
+                      <Input
+                        value={q.question}
+                        onChange={(e) => updateQuestion(qIdx, "question", e.target.value)}
+                        className="h-9 flex-1 text-sm font-medium"
+                      />
+                    ) : (
+                      <p className="text-sm font-medium leading-relaxed flex-1 mt-0.5">
+                        {q.question}
+                      </p>
+                    )}
+
+                    {editing && (
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => handleDeleteQuestion(qIdx)}
+                        className="h-8 w-8 shrink-0 text-muted-foreground hover:bg-destructive/10 hover:text-destructive transition-colors"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    )}
+                  </div>
                 </div>
                 <div className="ml-8 space-y-1.5">
-                  {q.options.slice(0, 4).map((opt, oIdx) => {
+                  {q.options?.slice(0, 4).map((opt, oIdx) => {
                     const isCorrect = q.correct_answer === opt;
                     const label = String.fromCharCode(97 + oIdx);
                     return (
                       <div
                         key={oIdx}
-                        className={`flex items-center gap-2.5 rounded-md border px-3 py-2 text-sm ${
-                          isCorrect
-                            ? "border-green-500/50 bg-green-500/10 text-green-500 dark:text-green-400"
-                            : "border-border text-muted-foreground"
-                        }`}
+                        className={`flex items-center gap-2.5 rounded-md border px-3 py-2 text-sm ${isCorrect
+                          ? "border-green-500/50 bg-green-500/10 text-green-500 dark:text-green-400"
+                          : "border-border text-muted-foreground"
+                          }`}
                       >
                         <button
                           onClick={() => editing && updateQuestion(qIdx, "correct", opt)}
-                          className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-xs font-semibold ${
-                            isCorrect
-                              ? "bg-green-500/20 text-green-500"
-                              : "bg-muted text-muted-foreground"
-                          } ${editing ? "cursor-pointer hover:ring-2 hover:ring-primary/30" : ""}`}
+                          className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-xs font-semibold ${isCorrect
+                            ? "bg-green-500/20 text-green-500"
+                            : "bg-muted text-muted-foreground"
+                            } ${editing ? "cursor-pointer hover:ring-2 hover:ring-primary/30" : ""}`}
                         >
                           {label}
                         </button>

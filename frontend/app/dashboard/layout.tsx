@@ -5,6 +5,8 @@ import { supabase } from "@/lib/supabase";
 import api from "@/lib/api";
 import { DashboardContext } from "@/lib/dashboard-context";
 import { Navbar } from "@/components/dashboard/navbar";
+import { MiniSidebar } from "@/components/dashboard/mini-sidebar";
+import { ProjectSidebar } from "@/components/dashboard/project-sidebar";
 import { Loader2 } from "lucide-react";
 import { Subject } from "@/types";
 
@@ -61,9 +63,20 @@ export default function DashboardLayout({
 
   return (
     <DashboardContext.Provider value={{ subjects, fetchSubjects }}>
-      <div className="flex h-screen flex-col bg-background">
+      <div className="flex h-screen flex-col bg-background text-foreground overflow-hidden">
+        {/* Global Navbar */}
         <Navbar onSubjectCreated={fetchSubjects} />
-        <div className="flex-1 overflow-hidden">{children}</div>
+
+        <div className="flex flex-1 overflow-hidden relative">
+          {/* Supabase-style Mini Sidebar (Global & Contextual) */}
+          <div className="hidden md:block w-[64px] shrink-0">
+            <MiniSidebar />
+          </div>
+
+          <main className="flex-1 overflow-auto bg-muted/20 pb-10">
+            {children}
+          </main>
+        </div>
       </div>
     </DashboardContext.Provider>
   );

@@ -56,3 +56,15 @@ async def get_saved_notes(teacher_id: str, subject_id: str) -> list[dict]:
         .execute()
     )
     return result.data
+
+
+async def get_note_by_id(note_id: str, teacher_id: str) -> dict | None:
+    supabase = get_supabase()
+    result = (
+        supabase.table("generated_notes")
+        .select("*")
+        .eq("id", note_id)
+        .eq("teacher_id", teacher_id)
+        .execute()
+    )
+    return result.data[0] if result.data else None

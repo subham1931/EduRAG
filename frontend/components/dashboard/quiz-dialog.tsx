@@ -33,14 +33,17 @@ interface QuizDialogProps {
 export function QuizDialog({ subject, onGenerated }: QuizDialogProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [topic, setTopic] = useState("");
+  const [counts, setCounts] = useState({
+    mcq: 5,
+    short: 0,
+    long: 0,
+    fill_blanks: 0
+  });
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [questions, setQuestions] = useState<QuizQuestion[]>([]);
   const [error, setError] = useState("");
-
-  const dragIdx = useRef<number | null>(null);
-  const dragOverIdx = useRef<number | null>(null);
 
   const handleGenerate = async () => {
     setLoading(true);
@@ -52,12 +55,15 @@ export function QuizDialog({ subject, onGenerated }: QuizDialogProps) {
       const { data } = await api.post("/generate-quiz", {
         subject_id: subject.id,
         topic: topic || undefined,
-        num_questions: 10,
+        mcq_count: counts.mcq,
+        short_count: counts.short,
+        long_count: counts.long,
+        fill_blanks_count: counts.fill_blanks
       });
       setQuestions(data.questions);
     } catch (err: any) {
       setError(
-        err.response?.data?.detail || "Failed to generate quiz. Try again."
+        err.response?.data?.detail || "Failed to generate questions. Try again."
       );
     } finally {
       setLoading(false);
@@ -69,12 +75,8 @@ export function QuizDialog({ subject, onGenerated }: QuizDialogProps) {
     try {
       await api.post("/save-quiz", {
         subject_id: subject.id,
-        title: topic || "General",
-        questions: questions.map((q) => ({
-          question: q.question,
-          options: q.options,
-          correct_answer: q.correct_answer,
-        })),
+        title: topic || "Practice Set",
+        questions: questions
       });
       setSaved(true);
       onGenerated?.();
@@ -87,31 +89,12 @@ export function QuizDialog({ subject, onGenerated }: QuizDialogProps) {
     }
   };
 
-  const handleDragStart = (idx: number) => {
-    dragIdx.current = idx;
+  const updateCount = (key: keyof typeof counts, val: string) => {
+    const n = parseInt(val) || 0;
+    setCounts(prev => ({ ...prev, [key]: Math.min(Math.max(0, n), 20) }));
   };
 
-  const handleDragEnter = (idx: number) => {
-    dragOverIdx.current = idx;
-  };
-
-  const handleDragEnd = () => {
-    if (dragIdx.current === null || dragOverIdx.current === null) return;
-    if (dragIdx.current === dragOverIdx.current) {
-      dragIdx.current = null;
-      dragOverIdx.current = null;
-      return;
-    }
-
-    const reordered = [...questions];
-    const [removed] = reordered.splice(dragIdx.current, 1);
-    reordered.splice(dragOverIdx.current, 0, removed);
-    setQuestions(reordered);
-    setSaved(false);
-
-    dragIdx.current = null;
-    dragOverIdx.current = null;
-  };
+  const totalQuestions = Object.values(counts).reduce((a, b) => a + b, 0);
 
   return (
     <Dialog
@@ -126,133 +109,160 @@ export function QuizDialog({ subject, onGenerated }: QuizDialogProps) {
       }}
     >
       <DialogTrigger asChild>
-        <Button variant="outline" size="sm">
-          <HelpCircle className="mr-2 h-4 w-4" />
-          Generate Quiz
+        <Button variant="outline" size="sm" className="rounded-xl font-bold gap-2">
+          <HelpCircle className="h-4 w-4" />
+          Add Questions
         </Button>
       </DialogTrigger>
-      <DialogContent className="max-w-6xl h-[90vh]">
+      <DialogContent className={`${questions.length > 0 ? "max-w-4xl h-[90vh]" : "max-w-md"} transition-all duration-300 rounded-3xl`}>
         <DialogHeader>
-          <DialogTitle>Quiz — {subject.name}</DialogTitle>
+          <DialogTitle className="text-2xl font-black">Generate Questions</DialogTitle>
           <DialogDescription>
-            Generate MCQ questions from your uploaded materials. Drag to
-            reorder questions.
+            Customize your assessment and generate questions from your materials.
           </DialogDescription>
         </DialogHeader>
 
         {questions.length === 0 ? (
-          <div className="space-y-4 pt-2">
+          <div className="space-y-6 py-4">
             <div className="space-y-2">
-              <Label>Topic (optional)</Label>
+              <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Topic (optional)</Label>
               <Input
                 value={topic}
                 onChange={(e) => setTopic(e.target.value)}
-                placeholder="e.g. Quantum mechanics, Chapter 3..."
+                placeholder="e.g. Molecular Biology, Chapter 4..."
+                className="rounded-xl h-11 bg-muted/50 border-none px-4"
               />
             </div>
-            {error && <p className="text-sm text-destructive">{error}</p>}
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">MCQ Questions</Label>
+                <Input
+                  type="number"
+                  value={counts.mcq}
+                  onChange={(e) => updateCount("mcq", e.target.value)}
+                  className="rounded-xl h-11 bg-muted/50 border-none px-4"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Short Answer</Label>
+                <Input
+                  type="number"
+                  value={counts.short}
+                  onChange={(e) => updateCount("short", e.target.value)}
+                  className="rounded-xl h-11 bg-muted/50 border-none px-4"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Long Answer</Label>
+                <Input
+                  type="number"
+                  value={counts.long}
+                  onChange={(e) => updateCount("long", e.target.value)}
+                  className="rounded-xl h-11 bg-muted/50 border-none px-4"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Fill in Blanks</Label>
+                <Input
+                  type="number"
+                  value={counts.fill_blanks}
+                  onChange={(e) => updateCount("fill_blanks", e.target.value)}
+                  className="rounded-xl h-11 bg-muted/50 border-none px-4"
+                />
+              </div>
+            </div>
+
+            {error && <p className="text-sm text-destructive font-medium bg-destructive/10 p-3 rounded-xl">{error}</p>}
+
             <Button
               onClick={handleGenerate}
-              disabled={loading}
-              className="w-full"
+              disabled={loading || totalQuestions === 0}
+              className="w-full h-12 rounded-2xl font-bold shadow-lg shadow-primary/20"
             >
               {loading ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Generating quiz...
+                  Generating {totalQuestions} Questions...
                 </>
               ) : (
-                "Generate 10 Questions"
+                `Generate ${totalQuestions} Questions`
               )}
             </Button>
           </div>
         ) : (
-          <div className="space-y-4">
-            <ScrollArea className="flex-1">
-              <div className="space-y-4 pr-4">
-                {questions.map((q, qIdx) => (
-                  <div
-                    key={qIdx}
-                    draggable
-                    onDragStart={() => handleDragStart(qIdx)}
-                    onDragEnter={() => handleDragEnter(qIdx)}
-                    onDragEnd={handleDragEnd}
-                    onDragOver={(e) => e.preventDefault()}
-                    className="group rounded-lg border bg-card p-4 transition-shadow hover:shadow-md"
-                  >
-                    <div className="mb-3 flex items-start gap-2">
-                      <div className="flex cursor-grab items-center pt-0.5 text-muted-foreground/40 active:cursor-grabbing group-hover:text-muted-foreground">
-                        <GripVertical className="h-4 w-4" />
+          <div className="flex flex-col h-full overflow-hidden mt-4 bg-muted/20 rounded-2xl border">
+            <ScrollArea className="flex-1 p-6">
+              <div className="space-y-8">
+                {questions.map((q, idx) => (
+                  <div key={idx} className="space-y-4 animate-in fade-in slide-in-from-bottom-2 duration-300">
+                    <div className="flex gap-4">
+                      <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-primary text-[11px] font-black text-primary-foreground shadow-sm">
+                        {idx + 1}
                       </div>
-                      <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary/10 text-xs font-bold text-primary">
-                        {qIdx + 1}
-                      </span>
-                      <p className="text-sm font-medium leading-relaxed">
-                        {q.question}
-                      </p>
-                    </div>
-                    <div className="ml-8 space-y-1.5">
-                      {q.options.slice(0, 4).map((opt, oIdx) => {
-                        const isCorrect = q.correct_answer === opt;
-                        const label = String.fromCharCode(97 + oIdx);
-                        return (
-                          <div
-                            key={oIdx}
-                            className={`flex items-center gap-2.5 rounded-md border px-3 py-2 text-sm ${
-                              isCorrect
-                                ? "border-green-500/50 bg-green-500/10 text-green-500 dark:text-green-400"
-                                : "border-border text-muted-foreground"
-                            }`}
-                          >
-                            <span
-                              className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-xs font-semibold ${
-                                isCorrect
-                                  ? "bg-green-500/20 text-green-500"
-                                  : "bg-muted text-muted-foreground"
-                              }`}
-                            >
-                              {label}
+                      <div className="flex-1 space-y-4">
+                        <div className="space-y-1">
+                          <div className="flex items-center gap-2">
+                            <span className="text-[9px] font-black uppercase tracking-widest px-1.5 py-0.5 rounded-md bg-muted text-muted-foreground">
+                              {q.type || 'MCQ'}
                             </span>
-                            {isCorrect && (
-                              <CheckCircle2 className="h-4 w-4 shrink-0 text-green-500" />
-                            )}
-                            <span>{opt}</span>
                           </div>
-                        );
-                      })}
+                          <p className="text-lg font-bold leading-snug tracking-tight">
+                            {q.question}
+                          </p>
+                        </div>
+
+                        {q.options && q.options.length > 0 && (
+                          <div className="grid grid-cols-2 gap-3">
+                            {q.options.map((opt, oIdx) => (
+                              <div
+                                key={oIdx}
+                                className={`p-3 rounded-xl border text-sm flex items-center gap-2 transition-all ${opt === q.correct_answer
+                                  ? "bg-emerald-500/10 border-emerald-500/30 text-emerald-500 font-bold"
+                                  : "bg-background/50 border-border text-muted-foreground font-medium"
+                                  }`}
+                              >
+                                {opt === q.correct_answer && <CheckCircle2 className="h-3.5 w-3.5" />}
+                                {opt}
+                              </div>
+                            ))}
+                          </div>
+                        )}
+
+                        <div className="p-4 rounded-2xl bg-primary/5 border border-primary/10">
+                          <p className="text-[10px] font-black uppercase tracking-widest text-primary/60 mb-1">Answer Key</p>
+                          <p className="text-sm font-medium">{q.correct_answer}</p>
+                        </div>
+                      </div>
                     </div>
                   </div>
                 ))}
               </div>
             </ScrollArea>
 
-            {error && <p className="text-sm text-destructive">{error}</p>}
-
-            <div className="flex gap-2">
+            <div className="p-4 bg-background border-t flex gap-3">
               <Button
                 variant="outline"
                 onClick={() => {
                   setQuestions([]);
                   setSaved(false);
                 }}
-                className="flex-1"
+                className="flex-1 rounded-xl h-11 font-bold"
               >
-                Generate New Quiz
+                Start Over
               </Button>
 
               <Button
-                variant={saved ? "secondary" : "default"}
                 onClick={handleSave}
                 disabled={saving || saved}
+                className="flex-1 rounded-xl h-11 font-bold shadow-lg shadow-primary/20"
               >
                 {saving ? (
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                ) : saved ? (
-                  <Check className="mr-2 h-4 w-4" />
                 ) : (
                   <Save className="mr-2 h-4 w-4" />
                 )}
-                {saved ? "Saved" : "Save Quiz"}
+                Save Questions
               </Button>
             </div>
           </div>

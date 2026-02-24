@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException
 from app.models.schemas import NotesRequest, NotesResponse, SaveNotesRequest, TokenPayload
-from app.services.notes_service import generate_notes, save_notes, get_saved_notes
+from app.services.notes_service import generate_notes, save_notes, get_saved_notes, get_note_by_id
 from app.services.subject_service import get_subject_by_id
 from app.utils.auth import get_current_teacher
 
@@ -49,5 +49,21 @@ async def list_notes(
 ):
     try:
         return await get_saved_notes(teacher.sub, subject_id)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/note/{note_id}")
+async def get_note(
+    note_id: str,
+    teacher: TokenPayload = Depends(get_current_teacher),
+):
+    try:
+        note = await get_note_by_id(note_id, teacher.sub)
+        if not note:
+            raise HTTPException(status_code=404, detail="Note not found")
+        return note
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))

@@ -1,0 +1,96 @@
+"use client";
+
+import React from "react";
+import Link from "next/link";
+import { usePathname, useParams, useSearchParams } from "next/navigation";
+import {
+    Home,
+    Settings,
+    HelpCircle,
+    LayoutDashboard,
+    MessageSquare,
+    Files,
+    Users,
+    ChevronLeft,
+    FileText,
+} from "lucide-react";
+import { cn } from "@/lib/utils";
+import {
+    TooltipProvider,
+} from "@/components/ui/tooltip";
+import { useDashboard } from "@/lib/dashboard-context";
+
+export function MiniSidebar() {
+    const pathname = usePathname();
+    const params = useParams();
+    const searchParams = useSearchParams();
+    const subjectId = params.subjectId as string;
+    const tab = searchParams.get("tab") || "overview";
+    const { subjects } = useDashboard();
+
+    const globalItems = [
+        { icon: Home, label: "Projects", href: "/dashboard" },
+        { icon: MessageSquare, label: "Global Chat", href: "/dashboard?global=chat" },
+        { icon: LayoutDashboard, label: "Usage Statistics", href: "/dashboard?global=usage" },
+        { icon: Settings, label: "Organization", href: "/dashboard?global=settings" },
+    ];
+
+    const projectItems = [
+        { icon: LayoutDashboard, label: "Subject Overview", href: `/dashboard/${subjectId}?tab=overview` },
+        { icon: MessageSquare, label: "AI Chat", href: `/dashboard/${subjectId}?tab=chat` },
+        { icon: HelpCircle, label: "Questions", href: `/dashboard/${subjectId}?tab=quizzes` },
+        { icon: FileText, label: "Study Notes", href: `/dashboard/${subjectId}?tab=notes` },
+        { icon: Files, label: "Documents", href: `/dashboard/${subjectId}?tab=docs` },
+        { icon: Users, label: "Students", href: `/dashboard/${subjectId}?tab=students` },
+        { icon: Settings, label: "Subject Settings", href: `/dashboard/${subjectId}?tab=settings` },
+    ];
+
+    const navItems = subjectId ? projectItems : globalItems;
+
+    return (
+        <aside
+            className={cn(
+                "group/sidebar fixed left-0 top-14 z-40 flex h-[calc(100vh-3.5rem)] w-[64px] flex-col items-center border-r bg-card py-4 transition-all duration-300 ease-in-out hover:w-[240px] dark:bg-background/95 shadow-xl"
+            )}
+        >
+            <TooltipProvider delayDuration={0}>
+                <div className="flex w-full flex-1 flex-col gap-2 px-3">
+
+                    {navItems.map((item) => {
+                        const targetTab = item.href.split("tab=")[1] || "overview";
+                        const isActive = subjectId
+                            ? (tab === targetTab && pathname.includes(subjectId))
+                            : pathname === item.href;
+
+                        return (
+                            <Link
+                                key={item.label}
+                                href={item.href}
+                                className={cn(
+                                    "group flex h-10 w-full items-center rounded-lg px-2 transition-all",
+                                    isActive
+                                        ? "bg-primary/10 text-primary shadow-sm"
+                                        : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                                )}
+                            >
+                                <item.icon className={cn("h-5 w-5 shrink-0", isActive ? "scale-110" : "group-hover:scale-110 transition-transform")} />
+                                <span className="ml-4 truncate text-sm font-medium opacity-0 transition-opacity duration-300 group-hover/sidebar:opacity-100 whitespace-nowrap">
+                                    {item.label}
+                                </span>
+                            </Link>
+                        );
+                    })}
+                </div>
+            </TooltipProvider>
+
+            <div className="mt-auto flex w-full flex-col gap-2 px-3">
+                <button className="group flex h-10 w-full items-center rounded-lg px-2 text-muted-foreground hover:bg-muted hover:text-foreground transition-all">
+                    <HelpCircle className="h-5 w-5 shrink-0" />
+                    <span className="ml-4 truncate text-sm font-medium opacity-0 transition-opacity duration-300 group-hover/sidebar:opacity-100 whitespace-nowrap">
+                        Documentation
+                    </span>
+                </button>
+            </div>
+        </aside>
+    );
+}

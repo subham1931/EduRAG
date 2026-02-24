@@ -22,15 +22,23 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { GraduationCap, Plus, LogOut, Sun, Moon, Monitor } from "lucide-react";
+import { ChevronRight, GraduationCap, Plus, LogOut, Sun, Moon, Monitor, Search } from "lucide-react";
 import api from "@/lib/api";
 import { supabase } from "@/lib/supabase";
+import { useParams } from "next/navigation";
+import { useDashboard } from "@/lib/dashboard-context";
 
 interface NavbarProps {
   onSubjectCreated: () => void;
 }
 
 export function Navbar({ onSubjectCreated }: NavbarProps) {
+  const params = useParams();
+  const subjectId = params.subjectId as string;
+  const { subjects } = useDashboard();
+
+  const currentSubject = subjects.find(s => s.id === subjectId);
+
   const [isOpen, setIsOpen] = useState(false);
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
@@ -72,18 +80,39 @@ export function Navbar({ onSubjectCreated }: NavbarProps) {
   const initials = userEmail ? userEmail.charAt(0).toUpperCase() : "U";
 
   return (
-    <nav className="sticky top-0 z-50 border-b bg-background/80 backdrop-blur-md">
-      <div className="flex h-16 items-center justify-between px-4 sm:px-6">
-        <Link href="/dashboard" className="flex items-center gap-2.5">
-          <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary/10">
-            <GraduationCap className="h-5 w-5 text-primary" />
-          </div>
-          <span className="inline-block text-lg font-bold tracking-tight">
-            EduRAG
-          </span>
-        </Link>
+    <nav className="sticky top-0 z-50 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+      <div className="flex h-14 items-center justify-between px-4 sm:px-6">
+        <div className="flex items-center gap-4">
+          <Link href="/dashboard" className="flex items-center gap-2 group transition-opacity hover:opacity-80">
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-primary-foreground">
+              <GraduationCap className="h-4 w-4" />
+            </div>
+            <span className="hidden sm:inline-block text-sm font-semibold">
+              EduRAG
+            </span>
+          </Link>
+
+          {currentSubject && (
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              <ChevronRight className="h-4 w-4" />
+              <Link
+                href={`/dashboard/${subjectId}`}
+                className="font-medium text-foreground hover:underline truncate max-w-[150px] sm:max-w-[250px]"
+              >
+                {currentSubject.name}
+              </Link>
+            </div>
+          )}
+        </div>
 
         <div className="flex items-center gap-3">
+          <div className="hidden lg:flex items-center relative text-muted-foreground hover:text-foreground transition-colors mr-2">
+            <Search className="h-4 w-4 absolute left-3" />
+            <input
+              placeholder="Search subjects..."
+              className="h-9 w-[200px] xl:w-[300px] rounded-md border bg-muted/50 pl-10 pr-4 text-xs focus:outline-none focus:ring-1 focus:ring-primary transition-all"
+            />
+          </div>
           <Dialog open={isOpen} onOpenChange={setIsOpen}>
             <DialogTrigger asChild>
               <Button size="sm" className="rounded-full px-3 sm:px-4">

@@ -39,11 +39,21 @@ export function SubjectSettingsDialog({
     onUpdate,
 }: SubjectSettingsDialogProps) {
     const [isOpen, setIsOpen] = useState(false);
-    const [name, setName] = useState(subject.name);
-    const [description, setDescription] = useState(subject.description || "");
+    const [name, setName] = useState(subject?.name || "");
+    const [description, setDescription] = useState(subject?.description || "");
     const [loading, setLoading] = useState(false);
     const [deleteLoading, setDeleteLoading] = useState(false);
     const router = useRouter();
+
+    // Sync state if subject prop changes
+    React.useEffect(() => {
+        if (subject) {
+            setName(subject.name);
+            setDescription(subject.description || "");
+        }
+    }, [subject]);
+
+    if (!subject) return null;
 
     const handleUpdate = async () => {
         if (!name.trim()) return;

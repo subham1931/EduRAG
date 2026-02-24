@@ -56,14 +56,16 @@ class AskResponse(BaseModel):
 class QuizRequest(BaseModel):
     subject_id: str
     topic: Optional[str] = None
-    num_questions: int = Field(default=10, ge=1, le=20)
-
+    mcq_count: int = 5
+    short_count: int = 0
+    long_count: int = 0
+    fill_blanks_count: int = 0
 
 class QuizQuestion(BaseModel):
+    type: str = "mcq" # mcq, short, long, fill_blanks
     question: str
-    options: list[str]
+    options: Optional[list[str]] = None
     correct_answer: str
-
 
 class QuizResponse(BaseModel):
     subject: str

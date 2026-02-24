@@ -8,7 +8,10 @@ async def generate_quiz(
     subject_id: str,
     teacher_id: str,
     topic: str | None = None,
-    num_questions: int = 10,
+    mcq_count: int = 5,
+    short_count: int = 0,
+    long_count: int = 0,
+    fill_blanks_count: int = 0,
 ) -> dict:
     query = topic if topic else "key concepts and important topics"
     chunks = await retrieve_relevant_chunks(
@@ -19,7 +22,9 @@ async def generate_quiz(
         raise ValueError("No documents found for this subject. Upload materials first.")
 
     context = format_context(chunks)
-    questions = await generate_quiz_json(context, topic or "", num_questions)
+    questions = await generate_quiz_json(
+        context, topic or "", mcq_count, short_count, long_count, fill_blanks_count
+    )
 
     subject = await get_subject_by_id(subject_id, teacher_id)
     subject_name = subject["name"] if subject else "Unknown"
@@ -74,3 +79,15 @@ async def get_quizzes(teacher_id: str, subject_id: str) -> list[dict]:
         .execute()
     )
     return result.data
+
+
+async def get_quiz_by_id(quiz_id: str, teacher_id: str) -> dict | None:
+    supabase = get_supabase()
+    result = (
+        supabase.table("quizzes")
+        .select("*")
+        .eq("id", quiz_id)
+        .eq("teacher_id", teacher_id)
+        .execute()
+    )
+    return result.data[0] if result.data else None
