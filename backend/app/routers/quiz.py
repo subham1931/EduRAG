@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException
 from app.models.schemas import QuizRequest, QuizResponse, SaveQuizRequest, UpdateQuizRequest, TokenPayload
-from app.services.quiz_service import generate_quiz, save_quiz, update_quiz, get_quizzes, get_quiz_by_id
+from app.services.quiz_service import generate_quiz, save_quiz, update_quiz, get_quizzes, get_quiz_by_id, delete_quiz, restore_quiz, get_deleted_quizzes
 from app.services.subject_service import get_subject_by_id
 from app.utils.auth import get_current_teacher
 
@@ -93,5 +93,49 @@ async def get_quiz(
         return quiz
     except HTTPException:
         raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.delete("/quiz/{quiz_id}")
+async def delete_quiz_endpoint(
+    quiz_id: str,
+    permanent: bool = False,
+    teacher: TokenPayload = Depends(get_current_teacher),
+):
+    try:
+        success = await delete_quiz(quiz_id, teacher.sub, permanent=permanent)
+        if not success:
+            raise HTTPException(status_code=404, detail="Quiz not found or already deleted")
+        return {"success": True}
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/quiz/{quiz_id}/restore")
+async def restore_quiz_endpoint(
+    quiz_id: str,
+    teacher: TokenPayload = Depends(get_current_teacher),
+):
+    try:
+        success = await restore_quiz(quiz_id, teacher.sub)
+        if not success:
+            raise HTTPException(status_code=404, detail="Quiz not found")
+        return {"success": True}
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/deleted/quizzes")
+async def list_deleted_quizzes(
+    subject_id: str | None = None,
+    teacher: TokenPayload = Depends(get_current_teacher),
+):
+    try:
+        return await get_deleted_quizzes(teacher.sub, subject_id)
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))

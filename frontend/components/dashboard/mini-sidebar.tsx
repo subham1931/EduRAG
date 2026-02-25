@@ -13,6 +13,7 @@ import {
     Users,
     ChevronLeft,
     FileText,
+    Trash2,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
@@ -24,7 +25,7 @@ export function MiniSidebar() {
     const pathname = usePathname();
     const params = useParams();
     const searchParams = useSearchParams();
-    const subjectId = params.subjectId as string;
+    const subjectId = (params.subjectId as string) || searchParams.get("subjectId");
     const tab = searchParams.get("tab") || "overview";
     const { subjects } = useDashboard();
 
@@ -87,7 +88,23 @@ export function MiniSidebar() {
                 </div>
             </TooltipProvider>
 
-            <div className="mt-auto flex w-full flex-col gap-2 px-3">
+            <div className="mt-auto flex w-full flex-col gap-2 px-3 border-t pt-4 pb-2">
+                {subjectId && (
+                    <Link
+                        href={`/dashboard/trash?subjectId=${subjectId}`}
+                        className={cn(
+                            "group flex h-10 w-full items-center rounded-lg px-2 transition-all",
+                            pathname === "/dashboard/trash"
+                                ? "bg-destructive/10 text-destructive shadow-sm"
+                                : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                        )}
+                    >
+                        <Trash2 className={cn("h-5 w-5 shrink-0", pathname === "/dashboard/trash" ? "scale-110" : "group-hover:scale-110 transition-transform")} />
+                        <span className="ml-4 truncate text-sm font-medium opacity-0 transition-opacity duration-300 group-hover/sidebar:opacity-100 whitespace-nowrap">
+                            Recycle Bin
+                        </span>
+                    </Link>
+                )}
                 <button className="group flex h-10 w-full items-center rounded-lg px-2 text-muted-foreground hover:bg-muted hover:text-foreground transition-all">
                     <HelpCircle className="h-5 w-5 shrink-0" />
                     <span className="ml-4 truncate text-sm font-medium opacity-0 transition-opacity duration-300 group-hover/sidebar:opacity-100 whitespace-nowrap">

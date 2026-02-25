@@ -216,14 +216,9 @@ export default function SubjectPage() {
             ) : (
               quizzes.map(quiz => (
                 <Link key={quiz.id} href={`/dashboard/${subjectId}/quizzes/${quiz.id}`} className="block h-full">
-                  <div className="p-4 rounded-[1.5rem] border bg-card/50 hover:bg-card hover:border-primary/40 hover:shadow-xl hover:shadow-primary/5 transition-all duration-500 flex flex-col group h-full relative overflow-hidden">
-                    {/* Subtle background decoration */}
-                    <div className="absolute -top-6 -right-6 p-4 opacity-0 group-hover:opacity-5 transition-all duration-700 rotate-12 group-hover:rotate-0">
-                      <Sparkles className="h-20 w-20 text-primary" />
-                    </div>
-
-                    <div className="flex items-center justify-between mb-4 relative z-10">
-                      <div className="p-2 rounded-xl bg-primary/10 text-primary group-hover:bg-primary group-hover:text-primary-foreground transition-all duration-500 shadow-sm">
+                  <div className="p-4 rounded-xl border bg-card hover:border-primary/30 transition-colors flex flex-col h-full">
+                    <div className="flex items-center justify-between mb-4">
+                      <div className="p-2 rounded-lg bg-primary/10 text-primary">
                         <Sparkles className="h-4 w-4" />
                       </div>
                       <span className="text-[9px] font-bold text-muted-foreground/50">
@@ -231,20 +226,20 @@ export default function SubjectPage() {
                       </span>
                     </div>
 
-                    <div className="relative z-10 flex-1">
-                      <h3 className="text-base font-black mb-1 tracking-tight group-hover:text-primary transition-colors duration-300 line-clamp-1">
+                    <div className="flex-1">
+                      <h3 className="text-base font-semibold mb-1 line-clamp-1">
                         {quiz.topic}
                       </h3>
                       <div className="flex items-center gap-1.5">
-                        <div className="h-1 w-1 rounded-full bg-emerald-500 animate-pulse" />
-                        <p className="text-[9px] font-black uppercase tracking-widest text-muted-foreground/50">
+                        <div className="h-1 w-1 rounded-full bg-emerald-500" />
+                        <p className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
                           {quiz.detail}
                         </p>
                       </div>
                     </div>
 
-                    <div className="mt-4 pt-3 border-t border-border/50 flex items-center justify-between relative z-10 opacity-0 group-hover:opacity-100 transition-all duration-500 translate-y-1 group-hover:translate-y-0 text-primary">
-                      <span className="text-[9px] font-black uppercase tracking-widest">Open</span>
+                    <div className="mt-4 pt-3 border-t border-border/50 flex items-center justify-between text-primary">
+                      <span className="text-[10px] font-medium uppercase tracking-wide">Open</span>
                       <ArrowRight className="h-3 w-3" />
                     </div>
                   </div>

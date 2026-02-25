@@ -52,6 +52,7 @@ async def get_saved_notes(teacher_id: str, subject_id: str) -> list[dict]:
         .select("*")
         .eq("teacher_id", teacher_id)
         .eq("subject_id", subject_id)
+        .eq("is_deleted", False)
         .order("created_at", desc=True)
         .execute()
     )
@@ -68,3 +69,51 @@ async def get_note_by_id(note_id: str, teacher_id: str) -> dict | None:
         .execute()
     )
     return result.data[0] if result.data else None
+
+
+async def delete_note(note_id: str, teacher_id: str, permanent: bool = False) -> bool:
+    supabase = get_supabase()
+    if permanent:
+        result = (
+            supabase.table("generated_notes")
+            .delete()
+            .eq("id", note_id)
+            .eq("teacher_id", teacher_id)
+            .execute()
+        )
+    else:
+        result = (
+            supabase.table("generated_notes")
+            .update({"is_deleted": True})
+            .eq("id", note_id)
+            .eq("teacher_id", teacher_id)
+            .execute()
+        )
+    return len(result.data) > 0
+
+
+async def restore_note(note_id: str, teacher_id: str) -> bool:
+    supabase = get_supabase()
+    result = (
+        supabase.table("generated_notes")
+        .update({"is_deleted": False})
+        .eq("id", note_id)
+        .eq("teacher_id", teacher_id)
+        .execute()
+    )
+    return len(result.data) > 0
+
+
+async def get_deleted_notes(teacher_id: str, subject_id: str | None = None) -> list[dict]:
+    supabase = get_supabase()
+    query = (
+        supabase.table("generated_notes")
+        .select("*, subjects(name)")
+        .eq("teacher_id", teacher_id)
+        .eq("is_deleted", True)
+    )
+    if subject_id:
+        query = query.eq("subject_id", subject_id)
+        
+    result = query.order("created_at", desc=True).execute()
+    return result.data

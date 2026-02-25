@@ -3,6 +3,8 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { toast } from "sonner";
+import jsPDF from "jspdf";
+import html2canvas from "html2canvas";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -23,6 +25,10 @@ import {
     BookmarkCheck,
     HelpCircle,
     X,
+    MoreVertical,
+    Download,
+    Copy,
+    FileEdit,
 } from "lucide-react";
 import { Subject, QuizQuestion } from "@/types";
 import api from "@/lib/api";
@@ -101,18 +107,18 @@ function SortableQuestionItem({
                 <div
                     {...attributes}
                     {...listeners}
-                    className="absolute -left-12 top-1/2 -translate-y-1/2 p-2 cursor-grab active:cursor-grabbing hover:bg-primary/5 rounded-xl transition-all hidden md:flex items-center justify-center"
+                    className="absolute -left-12 top-1/2 -translate-y-1/2 p-2 cursor-grab active:cursor-grabbing hover:bg-primary/5 rounded-xl transition-all hidden md:flex items-center justify-center no-pdf"
                 >
                     <GripVertical className="h-6 w-6 text-muted-foreground/30" />
                 </div>
             )}
 
             <div
-                className={`flex flex-col gap-4 animate-in fade-in slide-in-from-bottom-4 duration-500 bg-card border border-border/50 p-4 md:p-5 rounded-[1.5rem] shadow-sm hover:shadow-md transition-all ${isDragging ? "bg-muted/10 opacity-50 ring-2 ring-primary/20 scale-[0.98]" : ""}`}
+                className={`flex flex-col gap-4 bg-card border border-border p-4 md:p-5 rounded-xl transition-colors ${isDragging ? "bg-muted/20 opacity-70 ring-1 ring-primary/30" : "hover:bg-muted/20"}`}
             >
                 <div className="flex items-start gap-3">
                     <div className="flex flex-col items-center">
-                        <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-xl bg-primary text-[10px] font-black text-primary-foreground shadow-lg shadow-primary/20">
+                        <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md border border-border text-[11px] font-semibold text-muted-foreground">
                             {qIdx + 1}
                         </span>
                     </div>
@@ -138,7 +144,7 @@ function SortableQuestionItem({
                                     variant="ghost"
                                     size="icon"
                                     onClick={() => handleDeleteQuestion(qIdx)}
-                                    className="h-9 w-9 shrink-0 text-muted-foreground hover:bg-destructive/10 hover:text-destructive rounded-full transition-all"
+                                    className="h-9 w-9 shrink-0 text-muted-foreground hover:bg-destructive/10 hover:text-destructive rounded-full transition-all no-pdf"
                                 >
                                     <Trash2 className="h-4 w-4" />
                                 </Button>
@@ -156,16 +162,16 @@ function SortableQuestionItem({
                                     return (
                                         <div
                                             key={oIdx}
-                                            className={`relative group/opt flex items-center gap-3 border p-3 transition-all rounded-2xl ${isCorrect
-                                                ? "border-emerald-500/50 bg-emerald-500/5 shadow-sm"
-                                                : "border-border bg-card hover:bg-muted/5 font-medium"
+                                            className={`relative group/opt flex items-center gap-3 border p-3 transition-colors rounded-lg ${isCorrect
+                                                ? "border-emerald-500/50"
+                                                : "border-border"
                                                 }`}
                                         >
                                             <button
                                                 onClick={() => editing && updateQuestion(qIdx, "correct", opt)}
-                                                className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-lg text-[9px] font-black uppercase transition-all ${isCorrect
-                                                    ? "bg-emerald-500 text-white shadow-lg shadow-emerald-500/20"
-                                                    : "bg-muted text-muted-foreground group-hover/opt:bg-muted-foreground group-hover/opt:text-white"
+                                            className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-md border text-[10px] font-semibold uppercase transition-colors ${isCorrect
+                                                    ? "border-emerald-500 text-emerald-600"
+                                                    : "border-border text-muted-foreground"
                                                     } ${editing ? "cursor-pointer" : "cursor-default"}`}
                                             >
                                                 {label}
@@ -184,7 +190,7 @@ function SortableQuestionItem({
                                                     <span className="text-xs md:text-sm">{opt}</span>
                                                 )}
                                                 {isCorrect && (
-                                                    <CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-500 animate-in zoom-in-50 duration-300" />
+                                                    <CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-500" />
                                                 )}
                                             </div>
                                         </div>
@@ -195,8 +201,8 @@ function SortableQuestionItem({
                         {/* Non-MCQ Rendering */}
                         {((q.type && q.type.toLowerCase() !== 'mcq' && q.type.toLowerCase() !== 'multiple_choice') ||
                             (!q.type && (!q.options || q.options.length === 0))) && (
-                                <div className="p-4 rounded-2xl bg-muted/30 border border-border/50">
-                                    <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground mb-2">
+                                <div className="p-4 rounded-lg border border-border">
+                                    <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground mb-2">
                                         {q.type?.toLowerCase() === 'fill_blanks' ? 'Fill in the Blanks' : q.type?.toLowerCase() === 'short' ? 'Short Answer' : 'Long Answer'}
                                     </p>
                                     {editing ? (
@@ -236,6 +242,7 @@ export default function QuizDetailsPage() {
     const [saving, setSaving] = useState(false);
     const [marked, setMarked] = useState(false);
     const [generating, setGenerating] = useState(false);
+    const [isExporting, setIsExporting] = useState(false);
 
     // New Add Dialog State
     const [isAddOpen, setIsAddOpen] = useState(false);
@@ -249,6 +256,9 @@ export default function QuizDetailsPage() {
         fill_blanks: 0
     });
     const [genError, setGenError] = useState("");
+    const [isRenameOpen, setIsRenameOpen] = useState(false);
+    const [isDeleteOpen, setIsDeleteOpen] = useState(false);
+    const [tempTitle, setTempTitle] = useState("");
 
     const sensors = useSensors(
         useSensor(PointerSensor),
@@ -300,6 +310,40 @@ export default function QuizDetailsPage() {
             toast.error("Failed to update questions.");
         } finally {
             setSaving(false);
+        }
+    };
+
+    const handleDeleteQuiz = async () => {
+        try {
+            await api.delete(`/quiz/${quizId}`);
+            toast.success("Moved to Recycle Bin");
+            router.push(`/dashboard/${subjectId}?tab=quizzes`);
+        } catch (err) {
+            toast.error("Failed to delete assessment");
+        } finally {
+            setIsDeleteOpen(false);
+        }
+    };
+
+    const handleRename = async () => {
+        if (!tempTitle.trim()) return;
+        try {
+            await api.put("/update-quiz", {
+                quiz_id: quizId,
+                title: tempTitle,
+                questions: questions.map((q) => ({
+                    type: q.type,
+                    question: q.question,
+                    options: q.options,
+                    correct_answer: q.correct_answer,
+                })),
+            });
+            setQuiz({ ...quiz, title: tempTitle });
+            setQuizTitle(tempTitle);
+            setIsRenameOpen(false);
+            toast.success("Assessment renamed!");
+        } catch {
+            toast.error("Failed to rename");
         }
     };
 
@@ -402,6 +446,99 @@ export default function QuizDetailsPage() {
         }
     };
 
+    const handleExportPDF = async () => {
+        const element = document.getElementById("quiz-paper-view");
+        if (!element || !quiz) return;
+
+        setIsExporting(true);
+        const toastId = toast.loading("Generating High Quality PDF...");
+
+        try {
+            const canvas = await html2canvas(element, {
+                scale: 3, // Higher scale for text clarity
+                useCORS: true,
+                logging: false,
+                backgroundColor: "#ffffff",
+                onclone: (clonedDoc) => {
+                    const paper = clonedDoc.getElementById("quiz-paper-view");
+                    if (paper) {
+                        paper.style.display = "block";
+                        paper.style.width = "800px";
+                        paper.style.padding = "60px";
+                        paper.style.paddingBottom = "120px";
+                        paper.style.height = "auto";
+                    }
+                }
+            });
+
+            const pdf = new jsPDF({
+                orientation: "portrait",
+                unit: "px",
+                format: "a4"
+            });
+
+            const pageWidth = pdf.internal.pageSize.getWidth();
+            const pageHeight = pdf.internal.pageSize.getHeight();
+            const pageMargin = 24;
+            const usableWidth = pageWidth - pageMargin * 2;
+            const usableHeight = pageHeight - pageMargin * 2;
+            // Slice the full canvas into exact page-height chunks to avoid overlap/duplication.
+            const scaleToPdf = usableWidth / canvas.width;
+            const pageSliceHeightPx = Math.floor(usableHeight / scaleToPdf);
+            let sourceY = 0;
+            let pageIndex = 0;
+
+            while (sourceY < canvas.height) {
+                const sliceHeight = Math.min(pageSliceHeightPx, canvas.height - sourceY);
+                const pageCanvas = document.createElement("canvas");
+                pageCanvas.width = canvas.width;
+                pageCanvas.height = sliceHeight;
+
+                const pageCtx = pageCanvas.getContext("2d");
+                if (!pageCtx) break;
+
+                pageCtx.drawImage(
+                    canvas,
+                    0,
+                    sourceY,
+                    canvas.width,
+                    sliceHeight,
+                    0,
+                    0,
+                    canvas.width,
+                    sliceHeight
+                );
+
+                const pageImgData = pageCanvas.toDataURL("image/png");
+                const pageImgHeightInPdf = sliceHeight * scaleToPdf;
+
+                if (pageIndex > 0) {
+                    pdf.addPage();
+                }
+
+                pdf.addImage(
+                    pageImgData,
+                    "PNG",
+                    pageMargin,
+                    pageMargin,
+                    usableWidth,
+                    pageImgHeightInPdf
+                );
+
+                sourceY += sliceHeight;
+                pageIndex += 1;
+            }
+
+            pdf.save(`${quiz.title.replace(/\s+/g, "_")}_Question_Paper.pdf`);
+            toast.success("Professional PDF exported!", { id: toastId });
+        } catch (error) {
+            console.error("PDF Export Error:", error);
+            toast.error("Failed to export PDF", { id: toastId });
+        } finally {
+            setIsExporting(false);
+        }
+    };
+
     if (loading) {
         return (
             <div className="flex flex-1 items-center justify-center">
@@ -420,7 +557,7 @@ export default function QuizDetailsPage() {
     }
 
     return (
-        <div className="flex-1 flex flex-col h-full bg-background overflow-hidden animate-in fade-in duration-500">
+        <div className="flex-1 flex flex-col h-full bg-background overflow-hidden">
             {/* Header */}
             <div className="flex h-16 shrink-0 items-center justify-between border-b bg-card/50 px-6 gap-4">
                 <div className="flex items-center gap-4 min-w-0">
@@ -437,32 +574,74 @@ export default function QuizDetailsPage() {
                 <div className="flex items-center gap-3">
                     {!editing ? (
                         <>
-                            <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => setEditing(true)}
-                                className="rounded-xl h-9"
-                            >
-                                <Pencil className="mr-1.5 h-3.5 w-3.5" />
-                                Edit Questions
-                            </Button>
+                            <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                    <Button variant="ghost" size="icon" className="rounded-full h-9 w-9">
+                                        <MoreVertical className="h-5 w-5 text-muted-foreground" />
+                                    </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align="end" className="w-56 rounded-lg p-1 border bg-popover">
+                                    <DropdownMenuItem onClick={() => setEditing(true)} className="rounded-xl py-2.5 cursor-pointer font-bold">
+                                        <Pencil className="mr-2 h-4 w-4" />
+                                        Edit Questions
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem
+                                        onClick={() => {
+                                            setTempTitle(quiz.title);
+                                            setIsRenameOpen(true);
+                                        }}
+                                        className="rounded-xl py-2.5 cursor-pointer font-bold"
+                                    >
+                                        <FileEdit className="mr-2 h-4 w-4" />
+                                        Rename Assessment
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem
+                                        onClick={() => {
+                                            setMarked(!marked);
+                                            toast.success(marked ? "Unmarked" : "Marked!");
+                                        }}
+                                        className="rounded-xl py-2.5 cursor-pointer font-bold"
+                                    >
+                                        {marked ? (
+                                            <>
+                                                <BookmarkCheck className="mr-2 h-4 w-4 text-primary" />
+                                                Bookmarked
+                                            </>
+                                        ) : (
+                                            <>
+                                                <Bookmark className="mr-2 h-4 w-4" />
+                                                Bookmark
+                                            </>
+                                        )}
+                                    </DropdownMenuItem>
 
-                            <Button
-                                variant={marked ? "default" : "outline"}
-                                size="sm"
-                                onClick={() => {
-                                    setMarked(!marked);
-                                    toast.success(marked ? "Unmarked" : "Marked!");
-                                }}
-                                className="rounded-xl h-9"
-                            >
-                                {marked ? (
-                                    <BookmarkCheck className="mr-1.5 h-3.5 w-3.5 text-primary" />
-                                ) : (
-                                    <Bookmark className="mr-1.5 h-3.5 w-3.5" />
-                                )}
-                                {marked ? "Bookmarked" : "Bookmark"}
-                            </Button>
+                                    <div className="h-px bg-muted my-1 mx-1" />
+
+                                    <DropdownMenuItem
+                                        onClick={handleExportPDF}
+                                        disabled={isExporting}
+                                        className="rounded-xl py-2.5 cursor-pointer font-bold"
+                                    >
+                                        {isExporting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Download className="mr-2 h-4 w-4" />}
+                                        Export as PDF
+                                    </DropdownMenuItem>
+
+                                    <DropdownMenuItem className="rounded-xl py-2.5 font-bold opacity-50 cursor-not-allowed">
+                                        <Copy className="mr-2 h-4 w-4" />
+                                        Duplicate
+                                    </DropdownMenuItem>
+
+                                    <div className="h-px bg-muted my-1 mx-1" />
+
+                                    <DropdownMenuItem
+                                        onClick={() => setIsDeleteOpen(true)}
+                                        className="rounded-xl py-2.5 cursor-pointer font-bold text-destructive hover:text-destructive hover:bg-destructive/5"
+                                    >
+                                        <Trash2 className="mr-2 h-4 w-4" />
+                                        Delete Assessment
+                                    </DropdownMenuItem>
+                                </DropdownMenuContent>
+                            </DropdownMenu>
                         </>
                     ) : (
                         <>
@@ -470,7 +649,7 @@ export default function QuizDetailsPage() {
                             <Button variant="outline" size="sm" onClick={() => {
                                 setAddStep("method");
                                 setIsAddOpen(true);
-                            }} className="rounded-xl h-9 gap-2">
+                            }} className="h-9 gap-2">
                                 <Plus className="h-3.5 w-3.5" />
                                 Add Questions
                             </Button>
@@ -482,7 +661,7 @@ export default function QuizDetailsPage() {
                                     setEditing(false);
                                     fetchQuiz(); // Revert any unsaved changes
                                 }}
-                                className="rounded-xl h-9 font-bold text-muted-foreground"
+                                className="h-9 text-muted-foreground"
                             >
                                 Cancel
                             </Button>
@@ -490,7 +669,7 @@ export default function QuizDetailsPage() {
                                 size="sm"
                                 onClick={handleSave}
                                 disabled={saving}
-                                className="rounded-xl h-9 shadow-lg shadow-primary/20 font-bold px-6"
+                                className="h-9 font-medium px-4"
                             >
                                 {saving ? (
                                     <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
@@ -505,7 +684,46 @@ export default function QuizDetailsPage() {
             </div>
 
             <ScrollArea className="flex-1">
-                <div className="max-w-3xl mx-auto p-4 lg:p-6 space-y-6 pb-32">
+                <div className="max-w-3xl mx-auto p-4 lg:p-6 space-y-6 pb-32" id="quiz-content">
+                    {/* Paper View (Hidden in UI, only for PDF capture) */}
+                    <div id="quiz-paper-view" style={{ display: "none" }} className="bg-white text-black p-12 pb-24 relative font-serif">
+                        {/* Subtle Watermark */}
+                        <div className="absolute inset-0 flex items-center justify-center opacity-[0.04] pointer-events-none select-none z-0">
+                            <h1 className="text-[10rem] font-black -rotate-45 uppercase tracking-[0.2em]">EDURAG</h1>
+                        </div>
+
+                        <div className="relative z-10">
+                            <div className="text-center mb-12 border-b-4 border-double border-black pb-6">
+                                <h1 className="text-2xl font-bold uppercase tracking-[0.2em] mb-2 text-black">Question Bank</h1>
+                                <h2 className="text-xl font-bold uppercase text-black/80">{quiz?.title}</h2>
+                            </div>
+
+                            <div className="space-y-10">
+                                {questions.map((q, idx) => (
+                                    <div key={q.id} className="text-[13px] text-black">
+                                        <div className="flex gap-4 mb-4">
+                                            <span className="font-bold min-w-[35px] text-sm">{idx + 1}.</span>
+                                            <span className="font-medium leading-relaxed flex-1 text-sm">{q.question}</span>
+                                        </div>
+                                        {q.options && q.options.length > 0 && (
+                                            <div className="pl-12 space-y-2 mt-2">
+                                                {q.options.map((opt, oIdx) => (
+                                                    <div key={oIdx} className="flex gap-4 items-start">
+                                                        <span className="font-bold min-w-[15px]">{String.fromCharCode(97 + oIdx)})</span>
+                                                        <span className="flex-1">{opt}</span>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        )}
+                                    </div>
+                                ))}
+                            </div>
+
+                            <div className="mt-24 pt-10 border-t border-black/10 text-center">
+                                <p className="text-[10px] font-bold uppercase tracking-[0.5em] text-black/20 italic">Generated by EduRAG Artificial Intelligence</p>
+                            </div>
+                        </div>
+                    </div>
 
 
                     {/* Questions list */}
@@ -549,56 +767,56 @@ export default function QuizDetailsPage() {
 
             {/* Add Questions Modal */}
             <Dialog open={isAddOpen} onOpenChange={setIsAddOpen}>
-                <DialogContent className={`${addStep === 'method' ? "max-w-xl" : "max-w-md"} rounded-[2rem] overflow-hidden flex flex-col border-none shadow-2xl p-0`}>
-                    <DialogHeader className="shrink-0 pt-8 px-8 pb-2">
+                <DialogContent className={`${addStep === 'method' ? "max-w-xl" : "max-w-md"} flex max-h-[90vh] flex-col rounded-lg border p-0`}>
+                    <DialogHeader className="shrink-0 px-6 pt-6 pb-2">
                         <div className="flex items-center gap-2 mb-1">
                             {addStep !== "method" && (
                                 <Button variant="ghost" size="icon" onClick={() => {
                                     if (addStep === "ai_config") setAddStep("method");
                                     else if (addStep === "manual_type") setAddStep("method");
-                                }} className="h-8 w-8 rounded-full hover:bg-muted transition-colors -ml-2">
+                                }} className="h-8 w-8 -ml-1">
                                     <ChevronLeft className="h-4 w-4" />
                                 </Button>
                             )}
-                            <DialogTitle className="text-2xl font-black tracking-tight">
+                            <DialogTitle className="text-lg font-semibold">
                                 {addStep === "method" && "Select Method"}
                                 {addStep === "ai_config" && "AI Generator"}
                                 {addStep === "manual_type" && "Question Type"}
                             </DialogTitle>
                         </div>
-                        <DialogDescription className="text-sm font-medium opacity-80">
+                        <DialogDescription className="text-sm text-muted-foreground">
                             {addStep === "method" && "How would you like to build this assessment?"}
                             {addStep === "ai_config" && "Extract intelligent questions from your subject materials."}
                             {addStep === "manual_type" && "Choose the format for your manual question."}
                         </DialogDescription>
                     </DialogHeader>
 
-                    <div className="flex-1 overflow-y-auto overflow-x-hidden py-4 px-8 pb-8">
+                    <div className="flex-1 overflow-y-auto overflow-x-hidden px-6 py-4 pb-6">
                         {addStep === "method" && (
                             <div className="grid grid-cols-2 gap-4 py-2">
                                 <button
                                     onClick={() => setAddStep("ai_config")}
-                                    className="group flex flex-col gap-3 p-6 rounded-2xl border-2 border-transparent bg-muted/30 hover:bg-primary/5 hover:border-primary/20 transition-all text-left"
+                                    className="flex flex-col gap-3 rounded-lg border bg-background p-4 text-left hover:bg-muted/30"
                                 >
-                                    <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow-lg shadow-primary/20">
-                                        <Sparkles className="h-6 w-6" />
+                                    <div className="flex h-9 w-9 items-center justify-center rounded-md border text-muted-foreground">
+                                        <Sparkles className="h-5 w-5" />
                                     </div>
                                     <div>
-                                        <h3 className="font-black text-lg">Generate by AI</h3>
-                                        <p className="text-[11px] text-muted-foreground leading-snug">Auto-extract questions from your uploaded documents instantly.</p>
+                                        <h3 className="text-base font-medium">Generate by AI</h3>
+                                        <p className="text-xs text-muted-foreground">Auto-extract questions from your uploaded documents.</p>
                                     </div>
                                 </button>
 
                                 <button
                                     onClick={() => setAddStep("manual_type")}
-                                    className="group flex flex-col gap-3 p-6 rounded-2xl border-2 border-transparent bg-muted/30 hover:bg-orange-500/5 hover:border-orange-500/20 transition-all text-left"
+                                    className="flex flex-col gap-3 rounded-lg border bg-background p-4 text-left hover:bg-muted/30"
                                 >
-                                    <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-orange-500 text-white shadow-lg shadow-orange-500/20">
-                                        <Pencil className="h-6 w-6" />
+                                    <div className="flex h-9 w-9 items-center justify-center rounded-md border text-muted-foreground">
+                                        <Pencil className="h-5 w-5" />
                                     </div>
                                     <div>
-                                        <h3 className="font-black text-lg">Create Manually</h3>
-                                        <p className="text-[11px] text-muted-foreground leading-snug">Handcraft your own questions one by one for full control.</p>
+                                        <h3 className="text-base font-medium">Create Manually</h3>
+                                        <p className="text-xs text-muted-foreground">Handcraft your own questions with full control.</p>
                                     </div>
                                 </button>
                             </div>
@@ -607,53 +825,53 @@ export default function QuizDetailsPage() {
                         {addStep === "ai_config" && (
                             <div className="space-y-4">
                                 <div className="space-y-2">
-                                    <Label className="text-[10px] font-black uppercase tracking-widest text-primary flex items-center justify-between">
+                                    <Label className="text-xs font-medium uppercase tracking-wide flex items-center justify-between">
                                         Topic
-                                        <span className="text-[9px] text-muted-foreground bg-muted px-1.5 py-0.5 rounded-md lowercase font-normal italic">Compulsory</span>
+                                        <span className="text-[10px] text-muted-foreground">required</span>
                                     </Label>
                                     <Input
                                         value={addTopic}
                                         onChange={(e) => setAddTopic(e.target.value)}
                                         placeholder="e.g. React Lifecycle or Photosynthesis"
-                                        className="rounded-xl h-11 bg-muted/50 border-none px-4 focus-visible:ring-primary/20 transition-all"
+                                        className="h-10 rounded-md border bg-background px-3"
                                     />
                                 </div>
 
                                 <div className="space-y-2">
-                                    <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground flex items-center justify-between">
+                                    <Label className="text-xs font-medium uppercase tracking-wide text-muted-foreground flex items-center justify-between">
                                         Context / Style
-                                        <span className="text-[9px] font-normal lowercase italic bg-muted px-1.5 py-0.5 rounded-md">Optional</span>
+                                        <span className="text-[10px] text-muted-foreground">optional</span>
                                     </Label>
                                     <Input
                                         value={addStyle}
                                         onChange={(e) => setAddStyle(e.target.value)}
                                         placeholder="e.g. focusing on Hooks"
-                                        className="rounded-xl h-11 bg-muted/50 border-none px-4 focus-visible:ring-primary/20 transition-all"
+                                        className="h-10 rounded-md border bg-background px-3"
                                     />
                                 </div>
 
                                 <div className="grid grid-cols-2 gap-4 pt-2">
                                     {(['mcq', 'short', 'long', 'fill_blanks'] as const).map(key => (
                                         <div key={key} className="space-y-2">
-                                            <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">
+                                            <Label className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
                                                 {key.replace('_', ' ')}
                                             </Label>
                                             <Input
                                                 type="number"
                                                 value={addCounts[key]}
                                                 onChange={(e) => updateAddCount(key, e.target.value)}
-                                                className="rounded-xl h-9 bg-muted/50 border-none px-4 no-spinner"
+                                                className="h-9 rounded-md border bg-background px-3 no-spinner"
                                             />
                                         </div>
                                     ))}
                                 </div>
 
-                                {genError && <p className="text-xs text-destructive bg-destructive/5 p-2 rounded-lg">{genError}</p>}
+                                {genError && <p className="rounded-md border border-destructive/30 bg-destructive/5 p-2 text-xs text-destructive">{genError}</p>}
 
                                 <Button
                                     onClick={handleGenerateMore}
                                     disabled={generating || totalToAdd === 0 || !addTopic.trim()}
-                                    className="w-full h-12 rounded-2xl font-bold mt-2"
+                                    className="mt-2 h-10 w-full"
                                 >
                                     {generating ? (
                                         <>
@@ -678,13 +896,55 @@ export default function QuizDetailsPage() {
                                     <button
                                         key={t.id}
                                         onClick={() => handleAddManualStep(t.id)}
-                                        className="p-4 rounded-2xl bg-muted/30 border border-transparent hover:border-orange-500/30 hover:bg-orange-500/5 transition-all text-left font-bold text-sm"
+                                        className="rounded-lg border bg-background p-4 text-left text-sm font-medium hover:bg-muted/30"
                                     >
                                         {t.label}
                                     </button>
                                 ))}
                             </div>
                         )}
+                    </div>
+                </DialogContent>
+            </Dialog>
+
+            {/* Rename Dialog */}
+            <Dialog open={isRenameOpen} onOpenChange={setIsRenameOpen}>
+                <DialogContent className="max-w-md rounded-lg p-6 border">
+                    <DialogHeader>
+                        <DialogTitle className="text-xl font-semibold">Rename Assessment</DialogTitle>
+                        <DialogDescription>Enter a new name for this assessment.</DialogDescription>
+                    </DialogHeader>
+                    <div className="py-4">
+                        <Input
+                            value={tempTitle}
+                            onChange={(e) => setTempTitle(e.target.value)}
+                            placeholder="Assessment Title"
+                            className="h-11 rounded-md bg-muted/40 border px-3"
+                            onKeyDown={(e) => e.key === 'Enter' && handleRename()}
+                        />
+                    </div>
+                    <div className="flex justify-end gap-3">
+                        <Button variant="ghost" onClick={() => setIsRenameOpen(false)}>Cancel</Button>
+                        <Button onClick={handleRename}>Save Name</Button>
+                    </div>
+                </DialogContent>
+            </Dialog>
+
+            {/* Delete Confirmation Dialog */}
+            <Dialog open={isDeleteOpen} onOpenChange={setIsDeleteOpen}>
+                <DialogContent className="max-w-md rounded-lg p-6 border">
+                    <DialogHeader>
+                        <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-destructive/10 text-destructive mb-4">
+                            <Trash2 className="h-6 w-6" />
+                        </div>
+                        <DialogTitle className="text-xl font-semibold">Move to Recycle Bin?</DialogTitle>
+                        <DialogDescription>
+                            This assessment will be moved to the recycle bin. You can restore it later if needed.
+                        </DialogDescription>
+                    </DialogHeader>
+                    <div className="flex justify-end gap-3 mt-6">
+                        <Button variant="ghost" onClick={() => setIsDeleteOpen(false)}>Cancel</Button>
+                        <Button onClick={handleDeleteQuiz} variant="destructive">Move to Bin</Button>
                     </div>
                 </DialogContent>
             </Dialog>

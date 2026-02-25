@@ -4,6 +4,9 @@ import React, { useState, useEffect, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
 import ReactMarkdown from "react-markdown";
 import { toast } from "sonner";
+import jsPDF from "jspdf";
+import html2canvas from "html2canvas";
+import api from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import {
@@ -17,8 +20,22 @@ import {
     Printer,
     Copy,
     Check,
+    MoreVertical,
+    Trash2,
 } from "lucide-react";
-import api from "@/lib/api";
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogHeader,
+    DialogTitle,
+} from "@/components/ui/dialog";
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 export default function NoteDetailsPage() {
     const { subjectId, noteId } = useParams() as { subjectId: string; noteId: string };
@@ -27,6 +44,9 @@ export default function NoteDetailsPage() {
     const [note, setNote] = useState<any>(null);
     const [loading, setLoading] = useState(true);
     const [copied, setCopied] = useState(false);
+    const [isDeleteOpen, setIsDeleteOpen] = useState(false);
+    const [isDeleting, setIsDeleting] = useState(false);
+    const [isExporting, setIsExporting] = useState(false);
 
     const fetchNote = useCallback(async () => {
         setLoading(true);
@@ -45,12 +65,86 @@ export default function NoteDetailsPage() {
         fetchNote();
     }, [fetchNote]);
 
+    const handleDeleteNote = async () => {
+        setIsDeleting(true);
+        try {
+            await api.delete(`/note/${noteId}`);
+            toast.success("Moved to Recycle Bin");
+            router.push(`/dashboard/${subjectId}?tab=notes`);
+        } catch (err) {
+            toast.error("Failed to delete note");
+        } finally {
+            setIsDeleting(false);
+            setIsDeleteOpen(false);
+        }
+    };
+
     const handleCopy = () => {
         if (!note?.content) return;
         navigator.clipboard.writeText(note.content);
         setCopied(true);
         toast.success("Copied to clipboard!");
         setTimeout(() => setCopied(false), 2000);
+    };
+
+    const handleExportPDF = async () => {
+        const element = document.getElementById("note-paper-view");
+        if (!element || !note) return;
+
+        setIsExporting(true);
+        const toastId = toast.loading("Generating High Quality PDF...");
+
+        try {
+            const canvas = await html2canvas(element, {
+                scale: 3, // Higher scale for text clarity
+                useCORS: true,
+                logging: false,
+                backgroundColor: "#ffffff",
+                onclone: (clonedDoc) => {
+                    const paper = clonedDoc.getElementById("note-paper-view");
+                    if (paper) {
+                        paper.style.display = "block";
+                        paper.style.width = "800px";
+                        paper.style.padding = "60px";
+                        paper.style.height = "auto";
+                    }
+                }
+            });
+
+            const imgData = canvas.toDataURL("image/png");
+            const pdf = new jsPDF({
+                orientation: "portrait",
+                unit: "px",
+                format: "a4"
+            });
+
+            const imgProps = pdf.getImageProperties(imgData);
+            const pdfWidth = pdf.internal.pageSize.getWidth();
+            const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
+
+            // Handle multi-page if content is long
+            let heightLeft = pdfHeight;
+            let position = 0;
+            const pageHeight = pdf.internal.pageSize.getHeight();
+
+            pdf.addImage(imgData, "PNG", 0, position, pdfWidth, pdfHeight);
+            heightLeft -= pageHeight;
+
+            while (heightLeft >= 0) {
+                position = heightLeft - pdfHeight;
+                pdf.addPage();
+                pdf.addImage(imgData, "PNG", 0, position, pdfWidth, pdfHeight);
+                heightLeft -= pageHeight;
+            }
+
+            pdf.save(`${note.title.replace(/\s+/g, "_")}_Study_Notes.pdf`);
+            toast.success("Professional PDF exported!", { id: toastId });
+        } catch (error) {
+            console.error("PDF Export Error:", error);
+            toast.error("Failed to export PDF", { id: toastId });
+        } finally {
+            setIsExporting(false);
+        }
     };
 
     if (loading) {
@@ -123,8 +217,10 @@ export default function NoteDetailsPage() {
                         variant="outline"
                         size="icon"
                         className="rounded-xl h-9 w-9"
+                        onClick={handleExportPDF}
+                        disabled={isExporting}
                     >
-                        <Download className="h-3.5 w-3.5" />
+                        {isExporting ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Download className="h-3.5 w-3.5" />}
                     </Button>
 
                     <Button
@@ -134,11 +230,54 @@ export default function NoteDetailsPage() {
                         <Share2 className="mr-1.5 h-3.5 w-3.5" />
                         Share
                     </Button>
+
+                    <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="icon" className="rounded-full h-9 w-9">
+                                <MoreVertical className="h-5 w-5 text-muted-foreground" />
+                            </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end" className="w-48 rounded-2xl p-2 shadow-2xl border-none">
+                            <DropdownMenuItem
+                                onClick={() => setIsDeleteOpen(true)}
+                                className="rounded-xl py-2.5 cursor-pointer font-bold text-destructive hover:text-destructive hover:bg-destructive/5"
+                            >
+                                <Trash2 className="mr-2 h-4 w-4" />
+                                Delete Note
+                            </DropdownMenuItem>
+                        </DropdownMenuContent>
+                    </DropdownMenu>
                 </div>
             </div>
 
             <ScrollArea className="flex-1">
-                <div className="max-w-4xl mx-auto p-8 lg:p-12 pb-32">
+                <div className="max-w-4xl mx-auto p-8 lg:p-12 pb-32" id="note-content">
+                    {/* Paper View (Hidden in UI, only for PDF capture) */}
+                    <div id="note-paper-view" style={{ display: "none" }} className="bg-white text-black p-12 relative font-serif">
+                        {/* Subtle Watermark */}
+                        <div className="absolute inset-0 flex items-center justify-center opacity-[0.04] pointer-events-none select-none z-0">
+                            <h1 className="text-[10rem] font-black -rotate-45 uppercase tracking-[0.2em]">EDURAG</h1>
+                        </div>
+
+                        <div className="relative z-10">
+                            <div className="text-center mb-12 border-b-4 border-double border-black pb-6">
+                                <h1 className="text-2xl font-bold uppercase tracking-[0.2em] mb-2 text-black">Study Document</h1>
+                                <h2 className="text-xl font-bold uppercase text-black/80">{note?.title}</h2>
+                                <div className="flex justify-center mt-4 text-xs font-bold border-t border-black/20 pt-4">
+                                    <span>Date: {new Date().toLocaleDateString()}</span>
+                                </div>
+                            </div>
+
+                            <div className="prose prose-sm max-w-none text-black leading-relaxed">
+                                <ReactMarkdown>{note?.content}</ReactMarkdown>
+                            </div>
+
+                            <div className="mt-24 pt-10 border-t border-black/10 text-center">
+                                <p className="text-[10px] font-bold uppercase tracking-[0.5em] text-black/20 italic">Generated by EduRAG Artificial Intelligence</p>
+                            </div>
+                        </div>
+                    </div>
+
                     {/* Note Metadata Banner */}
                     <div className="mb-12 p-8 rounded-3xl bg-primary/5 border border-primary/10 flex items-center gap-6">
                         <div className="h-16 w-16 shrink-0 rounded-2xl bg-primary/10 text-primary flex items-center justify-center">
@@ -170,6 +309,25 @@ export default function NoteDetailsPage() {
                     </div>
                 </div>
             </ScrollArea>
+
+            {/* Delete Confirmation Dialog */}
+            <Dialog open={isDeleteOpen} onOpenChange={setIsDeleteOpen}>
+                <DialogContent className="max-w-md rounded-[2rem] p-8 border-none shadow-2xl">
+                    <DialogHeader>
+                        <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-destructive/10 text-destructive mb-4">
+                            <Trash2 className="h-6 w-6" />
+                        </div>
+                        <DialogTitle className="text-2xl font-black">Move to Recycle Bin?</DialogTitle>
+                        <DialogDescription>
+                            This study note will be moved to the recycle bin. You can restore it later if needed.
+                        </DialogDescription>
+                    </DialogHeader>
+                    <div className="flex justify-end gap-3 mt-6">
+                        <Button variant="ghost" onClick={() => setIsDeleteOpen(false)} className="rounded-xl font-bold">Cancel</Button>
+                        <Button onClick={handleDeleteNote} variant="destructive" disabled={isDeleting} className="rounded-xl font-bold px-8">Move to Bin</Button>
+                    </div>
+                </DialogContent>
+            </Dialog>
         </div>
     );
 }

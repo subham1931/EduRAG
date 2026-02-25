@@ -85,6 +85,7 @@ async def get_quizzes(teacher_id: str, subject_id: str) -> list[dict]:
         .select("*")
         .eq("teacher_id", teacher_id)
         .eq("subject_id", subject_id)
+        .eq("is_deleted", False)
         .order("created_at", desc=True)
         .execute()
     )
@@ -101,3 +102,51 @@ async def get_quiz_by_id(quiz_id: str, teacher_id: str) -> dict | None:
         .execute()
     )
     return result.data[0] if result.data else None
+
+
+async def delete_quiz(quiz_id: str, teacher_id: str, permanent: bool = False) -> bool:
+    supabase = get_supabase()
+    if permanent:
+        result = (
+            supabase.table("quizzes")
+            .delete()
+            .eq("id", quiz_id)
+            .eq("teacher_id", teacher_id)
+            .execute()
+        )
+    else:
+        result = (
+            supabase.table("quizzes")
+            .update({"is_deleted": True})
+            .eq("id", quiz_id)
+            .eq("teacher_id", teacher_id)
+            .execute()
+        )
+    return len(result.data) > 0
+
+
+async def restore_quiz(quiz_id: str, teacher_id: str) -> bool:
+    supabase = get_supabase()
+    result = (
+        supabase.table("quizzes")
+        .update({"is_deleted": False})
+        .eq("id", quiz_id)
+        .eq("teacher_id", teacher_id)
+        .execute()
+    )
+    return len(result.data) > 0
+
+
+async def get_deleted_quizzes(teacher_id: str, subject_id: str | None = None) -> list[dict]:
+    supabase = get_supabase()
+    query = (
+        supabase.table("quizzes")
+        .select("*, subjects(name)")
+        .eq("teacher_id", teacher_id)
+        .eq("is_deleted", True)
+    )
+    if subject_id:
+        query = query.eq("subject_id", subject_id)
+    
+    result = query.order("created_at", desc=True).execute()
+    return result.data
