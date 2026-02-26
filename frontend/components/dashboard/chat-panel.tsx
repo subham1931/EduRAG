@@ -139,7 +139,7 @@ export function ChatPanel({ subject }: ChatPanelProps) {
               <p className="text-sm font-medium text-muted-foreground animate-pulse">Consulting your knowledge base...</p>
             </div>
           ) : messages.length === 0 ? (
-            <div className="flex flex-col h-[60vh] items-center justify-center text-center space-y-6 max-w-sm mx-auto">
+            <div className="flex flex-col min-h-full items-center justify-center text-center space-y-5 max-w-sm mx-auto py-6">
               <div className="relative">
                 <div className="absolute -inset-4 bg-primary/5 rounded-full blur-2xl" />
                 <Bot className="relative h-20 w-20 text-primary opacity-20" />

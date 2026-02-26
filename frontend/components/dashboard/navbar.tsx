@@ -4,16 +4,6 @@ import React, { useState, useEffect } from "react";
 import { useTheme } from "next-themes";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-  DialogDescription,
-} from "@/components/ui/dialog";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -22,27 +12,18 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { ChevronRight, GraduationCap, Plus, LogOut, Sun, Moon, Monitor, Search } from "lucide-react";
-import api from "@/lib/api";
+import { ChevronRight, GraduationCap, LogOut, Sun, Moon, Monitor } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { useParams } from "next/navigation";
 import { useDashboard } from "@/lib/dashboard-context";
 
-interface NavbarProps {
-  onSubjectCreated: () => void;
-}
-
-export function Navbar({ onSubjectCreated }: NavbarProps) {
+export function Navbar() {
   const params = useParams();
   const subjectId = params.subjectId as string;
   const { subjects, quizTitle } = useDashboard();
 
   const currentSubject = subjects.find(s => s.id === subjectId);
 
-  const [isOpen, setIsOpen] = useState(false);
-  const [name, setName] = useState("");
-  const [description, setDescription] = useState("");
-  const [loading, setLoading] = useState(false);
   const [userEmail, setUserEmail] = useState("");
   const [mounted, setMounted] = useState(false);
   const { theme, setTheme } = useTheme();
@@ -55,22 +36,6 @@ export function Navbar({ onSubjectCreated }: NavbarProps) {
       }
     });
   }, []);
-
-  const handleCreate = async () => {
-    if (!name.trim()) return;
-    setLoading(true);
-    try {
-      await api.post("/subjects", { name, description: description || null });
-      setName("");
-      setDescription("");
-      setIsOpen(false);
-      onSubjectCreated();
-    } catch (err) {
-      console.error("Failed to create subject:", err);
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
@@ -114,59 +79,6 @@ export function Navbar({ onSubjectCreated }: NavbarProps) {
         </div>
 
         <div className="flex items-center gap-3">
-          <div className="hidden lg:flex items-center relative text-muted-foreground hover:text-foreground transition-colors mr-2">
-            <Search className="h-4 w-4 absolute left-3" />
-            <input
-              placeholder="Search subjects..."
-              className="h-9 w-[200px] xl:w-[300px] rounded-md border bg-muted/50 pl-10 pr-4 text-xs focus:outline-none focus:ring-1 focus:ring-primary transition-all"
-            />
-          </div>
-          <Dialog open={isOpen} onOpenChange={setIsOpen}>
-            <DialogTrigger asChild>
-              <Button size="sm" className="rounded-full px-3 sm:px-4">
-                <Plus className="h-4 w-4 sm:mr-2" />
-                <span className="hidden sm:inline">New Subject</span>
-              </Button>
-            </DialogTrigger>
-            <DialogContent>
-              <DialogHeader>
-                <DialogTitle>Create Subject</DialogTitle>
-                <DialogDescription>
-                  Add a new subject to organize your teaching materials.
-                </DialogDescription>
-              </DialogHeader>
-              <div className="space-y-4 pt-2">
-                <div className="space-y-2">
-                  <Label htmlFor="name">Subject Name</Label>
-                  <Input
-                    id="name"
-                    value={name}
-                    onChange={(e) => setName(e.target.value)}
-                    placeholder="e.g. Physics 101"
-                    className="h-11"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="desc">Description (optional)</Label>
-                  <Input
-                    id="desc"
-                    value={description}
-                    onChange={(e) => setDescription(e.target.value)}
-                    placeholder="Brief description"
-                    className="h-11"
-                  />
-                </div>
-                <Button
-                  onClick={handleCreate}
-                  disabled={loading || !name.trim()}
-                  className="h-11 w-full rounded-lg text-base"
-                >
-                  {loading ? "Creating..." : "Create Subject"}
-                </Button>
-              </div>
-            </DialogContent>
-          </Dialog>
-
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" size="icon" className="h-9 w-9">

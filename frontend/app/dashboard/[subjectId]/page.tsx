@@ -408,7 +408,7 @@ export default function SubjectPage() {
 
             <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
               {/* Knowledge Base Card */}
-              <div className="col-span-1 md:col-span-2 lg:col-span-2 rounded-2xl border bg-card shadow-sm overflow-hidden flex flex-col group hover:border-primary/50 transition-all duration-300">
+              <div className="col-span-full rounded-2xl border bg-card shadow-sm overflow-hidden flex flex-col group hover:border-primary/50 transition-all duration-300">
                 <div className="p-6 border-b bg-muted/30 flex items-center justify-between">
                   <div className="flex items-center gap-3">
                     <div className="p-2 rounded-xl bg-primary/10 text-primary">
@@ -443,43 +443,6 @@ export default function SubjectPage() {
                       ))}
                     </div>
                   )}
-                </div>
-              </div>
-
-              {/* Config / Tools Card */}
-              <div className="rounded-2xl border bg-card shadow-sm p-6 space-y-6">
-                <div>
-                  <h2 className="text-lg font-bold flex items-center gap-2">
-                    <Settings className="h-5 w-5 text-muted-foreground" />
-                    Controls
-                  </h2>
-                  <p className="text-xs text-muted-foreground mt-1">Manage project resources</p>
-                </div>
-
-                <div className="grid grid-cols-1 gap-2">
-                  <div className="flex items-center justify-between p-2 rounded-lg border bg-muted/10 group hover:bg-muted/30 transition-colors">
-                    <span className="text-xs font-medium">Generate Quiz</span>
-                    <QuizDialog subject={subject!} onGenerated={handleQuizGenerated} />
-                  </div>
-                  <div className="flex items-center justify-between p-2 rounded-lg border bg-muted/10 group hover:bg-muted/30 transition-colors">
-                    <span className="text-xs font-medium">Create Notes</span>
-                    <NotesDialog subject={subject!} onGenerated={handleNotesGenerated} />
-                  </div>
-                  <div className="flex items-center justify-between p-2 rounded-lg border bg-muted/10 group hover:bg-muted/30 transition-colors">
-                    <span className="text-xs font-medium">Settings</span>
-                    <SubjectSettingsDialog subject={subject!} onUpdate={fetchSubjects} />
-                  </div>
-                </div>
-
-                <div className="pt-4 border-t space-y-3">
-                  <div className="flex items-center justify-between text-[10px] uppercase font-bold tracking-wider text-muted-foreground">
-                    <span>Engine</span>
-                    <span className="text-primary">Ollama v0.1.x</span>
-                  </div>
-                  <div className="flex items-center justify-between text-[10px] uppercase font-bold tracking-wider text-muted-foreground">
-                    <span>Model</span>
-                    <span className="text-primary">Mistral / Llama3</span>
-                  </div>
                 </div>
               </div>
 

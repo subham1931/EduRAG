@@ -1,9 +1,20 @@
 "use client";
 
-import React from "react";
+import React, { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useDashboard } from "@/lib/dashboard-context";
+import api from "@/lib/api";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+  DialogDescription,
+} from "@/components/ui/dialog";
 import { Subject } from "@/types";
 import {
   BookOpen,
@@ -15,6 +26,7 @@ import {
   MessageSquare,
   Search,
   Filter,
+  Plus,
   MoreVertical,
   Layers,
   CheckCircle2,
@@ -22,7 +34,38 @@ import {
 
 export default function DashboardPage() {
   const router = useRouter();
-  const { subjects } = useDashboard();
+  const { subjects, fetchSubjects } = useDashboard();
+  const [isOpen, setIsOpen] = useState(false);
+  const [name, setName] = useState("");
+  const [description, setDescription] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+
+  const filteredSubjects = useMemo(() => {
+    const query = searchQuery.trim().toLowerCase();
+    if (!query) return subjects;
+
+    return subjects.filter((subject) => {
+      const searchable = `${subject.name} ${subject.description || ""}`.toLowerCase();
+      return searchable.includes(query);
+    });
+  }, [subjects, searchQuery]);
+
+  const handleCreate = async () => {
+    if (!name.trim()) return;
+    setLoading(true);
+    try {
+      await api.post("/subjects", { name, description: description || null });
+      setName("");
+      setDescription("");
+      setIsOpen(false);
+      await fetchSubjects();
+    } catch (err) {
+      console.error("Failed to create subject:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6">
@@ -35,6 +78,51 @@ export default function DashboardPage() {
           </p>
         </div>
         <div className="flex items-center gap-2">
+          <Dialog open={isOpen} onOpenChange={setIsOpen}>
+            <DialogTrigger asChild>
+              <Button size="sm" className="h-9">
+                <Plus className="mr-2 h-4 w-4" />
+                New Subject
+              </Button>
+            </DialogTrigger>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Create Subject</DialogTitle>
+                <DialogDescription>
+                  Add a new subject to organize your teaching materials.
+                </DialogDescription>
+              </DialogHeader>
+              <div className="space-y-4 pt-2">
+                <div className="space-y-2">
+                  <Label htmlFor="name">Subject Name</Label>
+                  <Input
+                    id="name"
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    placeholder="e.g. Physics 101"
+                    className="h-11"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="desc">Description (optional)</Label>
+                  <Input
+                    id="desc"
+                    value={description}
+                    onChange={(e) => setDescription(e.target.value)}
+                    placeholder="Brief description"
+                    className="h-11"
+                  />
+                </div>
+                <Button
+                  onClick={handleCreate}
+                  disabled={loading || !name.trim()}
+                  className="h-11 w-full rounded-lg text-base"
+                >
+                  {loading ? "Creating..." : "Create Subject"}
+                </Button>
+              </div>
+            </DialogContent>
+          </Dialog>
           <div className="group flex items-center h-9 w-9 justify-center rounded-md border bg-card hover:bg-muted transition-colors cursor-pointer">
             <Layers className="h-4 w-4 text-muted-foreground group-hover:text-foreground" />
           </div>
@@ -50,6 +138,8 @@ export default function DashboardPage() {
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <input
             placeholder="Search for a project"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
             className="h-10 w-full rounded-md border bg-card/50 pl-10 pr-4 text-sm focus:outline-none focus:ring-1 focus:ring-primary transition-all"
           />
         </div>
@@ -75,9 +165,19 @@ export default function DashboardPage() {
               Create your first subject to start building your AI teacher assistant.
             </p>
           </div>
+        ) : filteredSubjects.length === 0 ? (
+          <div className="flex flex-col items-center justify-center py-20 text-center px-6">
+            <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-muted/40">
+              <Search className="h-8 w-8 text-muted-foreground" />
+            </div>
+            <h2 className="text-lg font-semibold">No matching projects</h2>
+            <p className="mt-1 max-w-xs text-sm text-muted-foreground">
+              Try a different keyword for your search.
+            </p>
+          </div>
         ) : (
           <div className="divide-y">
-            {subjects.map((subject) => {
+            {filteredSubjects.map((subject) => {
               const date = new Date(subject.created_at).toLocaleDateString("en-US", {
                 month: "short",
                 day: "numeric",

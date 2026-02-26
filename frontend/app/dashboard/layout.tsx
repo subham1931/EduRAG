@@ -66,11 +66,11 @@ export default function DashboardLayout({
     <DashboardContext.Provider value={{ subjects, fetchSubjects, quizTitle, setQuizTitle }}>
       <div className="flex h-screen flex-col bg-background text-foreground overflow-hidden">
         {/* Global Navbar */}
-        <Navbar onSubjectCreated={fetchSubjects} />
+        <Navbar />
 
         <div className="flex flex-1 overflow-hidden relative">
           {/* Supabase-style Mini Sidebar (Global & Contextual) */}
-          <div className="hidden md:block w-[64px] shrink-0">
+          <div className="hidden md:block w-[240px] shrink-0">
             <MiniSidebar />
           </div>
 

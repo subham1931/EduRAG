@@ -580,7 +580,7 @@ export default function QuizDetailsPage() {
                                         <MoreVertical className="h-5 w-5 text-muted-foreground" />
                                     </Button>
                                 </DropdownMenuTrigger>
-                                <DropdownMenuContent align="end" className="w-56 rounded-lg p-1 border bg-popover">
+                                <DropdownMenuContent align="end" className="w-56 rounded-lg p-1 border bg-background/95 backdrop-blur-sm shadow-lg">
                                     <DropdownMenuItem onClick={() => setEditing(true)} className="rounded-xl py-2.5 cursor-pointer font-bold">
                                         <Pencil className="mr-2 h-4 w-4" />
                                         Edit Questions
@@ -684,7 +684,7 @@ export default function QuizDetailsPage() {
             </div>
 
             <ScrollArea className="flex-1">
-                <div className="max-w-3xl mx-auto p-4 lg:p-6 space-y-6 pb-32" id="quiz-content">
+                <div className="w-full p-4 lg:p-6 space-y-6 pb-32" id="quiz-content">
                     {/* Paper View (Hidden in UI, only for PDF capture) */}
                     <div id="quiz-paper-view" style={{ display: "none" }} className="bg-white text-black p-12 pb-24 relative font-serif">
                         {/* Subtle Watermark */}

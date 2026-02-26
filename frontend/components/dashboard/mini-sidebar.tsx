@@ -51,7 +51,7 @@ export function MiniSidebar() {
     return (
         <aside
             className={cn(
-                "group/sidebar fixed left-0 top-14 z-40 flex h-[calc(100vh-3.5rem)] w-[64px] flex-col items-center border-r bg-card py-4 transition-all duration-300 ease-in-out hover:w-[240px] dark:bg-background/95 shadow-xl"
+                "fixed left-0 top-14 z-40 flex h-[calc(100vh-3.5rem)] w-[240px] flex-col items-center border-r bg-card py-4 dark:bg-background/95 shadow-xl"
             )}
         >
             <TooltipProvider delayDuration={0}>
@@ -79,7 +79,7 @@ export function MiniSidebar() {
                                 )}
                             >
                                 <item.icon className={cn("h-5 w-5 shrink-0", isActive ? "scale-110" : "group-hover:scale-110 transition-transform")} />
-                                <span className="ml-4 truncate text-sm font-medium opacity-0 transition-opacity duration-300 group-hover/sidebar:opacity-100 whitespace-nowrap">
+                                <span className="ml-4 truncate text-sm font-medium whitespace-nowrap">
                                     {item.label}
                                 </span>
                             </Link>
@@ -100,14 +100,14 @@ export function MiniSidebar() {
                         )}
                     >
                         <Trash2 className={cn("h-5 w-5 shrink-0", pathname === "/dashboard/trash" ? "scale-110" : "group-hover:scale-110 transition-transform")} />
-                        <span className="ml-4 truncate text-sm font-medium opacity-0 transition-opacity duration-300 group-hover/sidebar:opacity-100 whitespace-nowrap">
+                        <span className="ml-4 truncate text-sm font-medium whitespace-nowrap">
                             Recycle Bin
                         </span>
                     </Link>
                 )}
                 <button className="group flex h-10 w-full items-center rounded-lg px-2 text-muted-foreground hover:bg-muted hover:text-foreground transition-all">
                     <HelpCircle className="h-5 w-5 shrink-0" />
-                    <span className="ml-4 truncate text-sm font-medium opacity-0 transition-opacity duration-300 group-hover/sidebar:opacity-100 whitespace-nowrap">
+                    <span className="ml-4 truncate text-sm font-medium whitespace-nowrap">
                         Documentation
                     </span>
                 </button>
