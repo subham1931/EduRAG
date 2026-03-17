@@ -1,3 +1,6 @@
+from __future__ import annotations
+
+from typing import Optional
 from fastapi import APIRouter, Depends, HTTPException
 from app.models.schemas import QuizRequest, QuizResponse, SaveQuizRequest, UpdateQuizRequest, TokenPayload
 from app.services.quiz_service import generate_quiz, save_quiz, update_quiz, get_quizzes, get_quiz_by_id, delete_quiz, restore_quiz, get_deleted_quizzes
@@ -132,7 +135,7 @@ async def restore_quiz_endpoint(
 
 @router.get("/deleted/quizzes")
 async def list_deleted_quizzes(
-    subject_id: str | None = None,
+    subject_id: Optional[str] = None,
     teacher: TokenPayload = Depends(get_current_teacher),
 ):
     try:

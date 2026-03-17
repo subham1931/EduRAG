@@ -30,7 +30,7 @@ export function MiniSidebar() {
     const { subjects } = useDashboard();
 
     const globalItems = [
-        { icon: Home, label: "Projects", href: "/dashboard" },
+        { icon: Home, label: "Subjects", href: "/dashboard" },
         { icon: MessageSquare, label: "Global Chat", href: "/dashboard?global=chat" },
         { icon: LayoutDashboard, label: "Usage Statistics", href: "/dashboard?global=usage" },
         { icon: Settings, label: "Organization", href: "/dashboard?global=settings" },

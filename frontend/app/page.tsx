@@ -29,6 +29,7 @@ import {
   Sun,
   Moon,
   Monitor,
+  Menu,
 } from "lucide-react";
 
 export default function LandingPage() {
@@ -87,7 +88,7 @@ export default function LandingPage() {
             </a>
           </div>
 
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2">
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" size="icon" className="h-9 w-9">
@@ -121,26 +122,66 @@ export default function LandingPage() {
               </DropdownMenuContent>
             </DropdownMenu>
 
-            {loggedIn ? (
-              <Button onClick={() => router.push("/dashboard")}>
-                Dashboard
-                <ArrowRight className="ml-2 h-4 w-4" />
-              </Button>
-            ) : (
-              <>
-                <Link href="/login">
-                  <Button variant="ghost" size="sm">
-                    Log in
-                  </Button>
-                </Link>
-                <Link href="/register">
-                  <Button size="sm">
-                    Get Started
-                    <ArrowRight className="ml-2 h-4 w-4" />
-                  </Button>
-                </Link>
-              </>
-            )}
+            <div className="hidden items-center gap-3 md:flex">
+              {loggedIn ? (
+                <Button onClick={() => router.push("/dashboard")}>
+                  Dashboard
+                  <ArrowRight className="ml-2 h-4 w-4" />
+                </Button>
+              ) : (
+                <>
+                  <Link href="/login">
+                    <Button variant="ghost" size="sm">
+                      Log in
+                    </Button>
+                  </Link>
+                  <Link href="/register">
+                    <Button size="sm">
+                      Get Started
+                      <ArrowRight className="ml-2 h-4 w-4" />
+                    </Button>
+                  </Link>
+                </>
+              )}
+            </div>
+
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="icon" className="h-9 w-9 md:hidden">
+                  <Menu className="h-4 w-4" />
+                  <span className="sr-only">Open menu</span>
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-52 md:hidden">
+                <DropdownMenuItem asChild>
+                  <a href="#features">Features</a>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild>
+                  <a href="#how-it-works">How it works</a>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild>
+                  <a href="#testimonial">Testimonials</a>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild>
+                  <a href="#stats">Results</a>
+                </DropdownMenuItem>
+                <div className="my-1 h-px bg-border" />
+                {loggedIn ? (
+                  <DropdownMenuItem onClick={() => router.push("/dashboard")}>
+                    Dashboard
+                  </DropdownMenuItem>
+                ) : (
+                  <>
+                    <DropdownMenuItem asChild>
+                      <Link href="/login">Log in</Link>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem asChild>
+                      <Link href="/register">Get Started</Link>
+                    </DropdownMenuItem>
+                  </>
+                )}
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
         </div>
       </nav>
@@ -149,8 +190,8 @@ export default function LandingPage() {
       <section className="relative overflow-hidden">
         <div className="absolute inset-0 -z-10">
           <div className="absolute left-1/2 top-0 h-[600px] w-[600px] -translate-x-1/2 rounded-full bg-primary/5 blur-3xl" />
-          <div className="absolute right-0 top-20 h-[400px] w-[400px] rounded-full bg-purple-400/10 blur-3xl" />
-          <div className="absolute bottom-0 left-0 h-[300px] w-[300px] rounded-full bg-violet-400/10 blur-3xl" />
+          <div className="absolute right-0 top-20 h-[400px] w-[400px] rounded-full bg-blue-400/10 blur-3xl" />
+          <div className="absolute bottom-0 left-0 h-[300px] w-[300px] rounded-full bg-cyan-400/10 blur-3xl" />
         </div>
 
         <div className="mx-auto max-w-7xl px-4 pb-20 pt-16 sm:px-6 lg:pt-24">
@@ -163,7 +204,7 @@ export default function LandingPage() {
 
               <h1 className="text-4xl font-bold tracking-tight sm:text-5xl lg:text-6xl">
                 Smart knowledge
-                <span className="bg-gradient-to-r from-primary to-purple-400 bg-clip-text text-transparent">
+                <span className="bg-gradient-to-r from-primary to-cyan-400 bg-clip-text text-transparent">
                   {" "}assistant{" "}
                 </span>
                 for teachers
@@ -175,18 +216,18 @@ export default function LandingPage() {
                 teachers interact with their knowledge base.
               </p>
 
-              <div className="mt-8 flex flex-wrap gap-4">
-                <Link href={ctaHref}>
-                  <Button size="lg" className="rounded-full px-8 text-base">
+              <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:gap-4">
+                <Link href={ctaHref} className="w-full sm:w-auto">
+                  <Button size="lg" className="w-full rounded-full px-8 text-base sm:w-auto">
                     Start for Free
                     <ArrowRight className="ml-2 h-4 w-4" />
                   </Button>
                 </Link>
-                <a href="#how-it-works">
+                <a href="#how-it-works" className="w-full sm:w-auto">
                   <Button
                     variant="outline"
                     size="lg"
-                    className="rounded-full px-8 text-base"
+                    className="w-full rounded-full px-8 text-base sm:w-auto"
                   >
                     See how it works
                   </Button>
@@ -262,20 +303,20 @@ export default function LandingPage() {
       </section>
 
       {/* ───── Features ───── */}
-      <section id="features" className="border-t bg-muted/30 py-20">
+      <section id="features" className="border-t bg-muted/30 py-14 sm:py-20">
         <div className="mx-auto max-w-7xl px-4 sm:px-6">
-          <div className="grid items-center gap-12 lg:grid-cols-2">
+          <div className="grid items-center gap-10 lg:grid-cols-2 lg:gap-12">
             <div>
-              <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">
+              <h2 className="text-2xl font-bold tracking-tight sm:text-3xl lg:text-4xl">
                 Transform your teaching workflow
               </h2>
-              <p className="mt-4 text-lg text-muted-foreground">
+              <p className="mt-4 text-base text-muted-foreground sm:text-lg">
                 EduRAG uses Retrieval-Augmented Generation to give you instant,
                 accurate answers from your own course materials. No more
                 searching through piles of documents.
               </p>
 
-              <div className="mt-8 space-y-5">
+              <div className="mt-8 space-y-4 sm:space-y-5">
                 {[
                   {
                     icon: Upload,
@@ -293,7 +334,10 @@ export default function LandingPage() {
                     desc: "Create quizzes and structured notes from your documents in seconds.",
                   },
                 ].map((f) => (
-                  <div key={f.title} className="flex gap-4">
+                  <div
+                    key={f.title}
+                    className="flex gap-4 rounded-xl border bg-card/60 p-4 sm:rounded-none sm:border-0 sm:bg-transparent sm:p-0"
+                  >
                     <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-primary/10">
                       <f.icon className="h-5 w-5 text-primary" />
                     </div>
@@ -307,8 +351,8 @@ export default function LandingPage() {
                 ))}
               </div>
 
-              <Link href={ctaHref} className="mt-8 inline-block">
-                <Button className="rounded-full" size="lg">
+              <Link href={ctaHref} className="mt-8 block w-full sm:inline-block sm:w-auto">
+                <Button className="w-full rounded-full sm:w-auto" size="lg">
                   Start teaching smarter
                   <ArrowRight className="ml-2 h-4 w-4" />
                 </Button>
@@ -360,26 +404,26 @@ export default function LandingPage() {
       </section>
 
       {/* ───── How it Works (3 cards) ───── */}
-      <section id="how-it-works" className="py-20">
+      <section id="how-it-works" className="py-14 sm:py-20">
         <div className="mx-auto max-w-7xl px-4 sm:px-6">
           <div className="mx-auto max-w-2xl text-center">
-            <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">
+            <h2 className="text-2xl font-bold tracking-tight sm:text-3xl lg:text-4xl">
               Top-notch AI, limitless learning
             </h2>
-            <p className="mt-4 text-muted-foreground">
+            <p className="mt-4 text-sm text-muted-foreground sm:text-base">
               Three simple steps to supercharge your teaching preparation and
               make knowledge accessible instantly.
             </p>
           </div>
 
-          <div className="mt-16 grid gap-8 sm:grid-cols-3">
+          <div className="mt-10 grid gap-4 sm:mt-16 sm:gap-8 sm:grid-cols-3">
             {[
               {
                 num: "1",
                 icon: Shield,
                 title: "Secure & Private",
                 desc: "Your documents stay yours. Every query is filtered by your account — no data leaks, no cross-contamination.",
-                color: "bg-purple-500/10 text-purple-500",
+                color: "bg-blue-500/10 text-blue-500",
               },
               {
                 num: "2",
@@ -398,9 +442,9 @@ export default function LandingPage() {
             ].map((card) => (
               <div
                 key={card.num}
-                className="group rounded-2xl border bg-card p-6 transition-all hover:shadow-lg hover:shadow-primary/5"
+                className="group rounded-2xl border bg-card p-5 transition-all hover:shadow-lg hover:shadow-primary/5 sm:p-6"
               >
-                <div className="mb-4 flex items-center gap-3">
+                <div className="mb-3 flex items-center gap-3 sm:mb-4">
                   <span className="flex h-8 w-8 items-center justify-center rounded-full bg-primary text-sm font-bold text-primary-foreground">
                     {card.num}
                   </span>
@@ -410,7 +454,7 @@ export default function LandingPage() {
                     <card.icon className="h-5 w-5" />
                   </div>
                 </div>
-                <h3 className="text-lg font-semibold">{card.title}</h3>
+                <h3 className="text-base font-semibold sm:text-lg">{card.title}</h3>
                 <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
                   {card.desc}
                 </p>
@@ -421,32 +465,32 @@ export default function LandingPage() {
       </section>
 
       {/* ───── Testimonial ───── */}
-      <section id="testimonial" className="border-t bg-muted/30 py-20">
+      <section id="testimonial" className="border-t bg-muted/30 py-14 sm:py-20">
         <div className="mx-auto max-w-7xl px-4 sm:px-6">
           <div className="mx-auto max-w-3xl text-center">
-            <div className="mb-6 flex justify-center gap-1">
+            <div className="mb-5 flex justify-center gap-1 sm:mb-6">
               {[...Array(5)].map((_, i) => (
                 <Star
                   key={i}
-                  className="h-5 w-5 fill-yellow-400 text-yellow-400"
+                  className="h-4 w-4 fill-yellow-400 text-yellow-400 sm:h-5 sm:w-5"
                 />
               ))}
             </div>
 
-            <blockquote className="text-xl font-medium leading-relaxed sm:text-2xl">
+            <blockquote className="text-lg font-medium leading-relaxed sm:text-xl md:text-2xl">
               &ldquo;EduRAG gave me an amazing opportunity to transform how I
               prepare for classes. I upload my materials once and can instantly
               generate quizzes, review notes, and get answers to any question.
               It&apos;s like having a personal research assistant.&rdquo;
             </blockquote>
 
-            <div className="mt-8 flex items-center justify-center gap-4">
-              <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary/10 text-lg font-bold text-primary">
+            <div className="mt-7 flex items-center justify-center gap-3 sm:mt-8 sm:gap-4">
+              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10 text-base font-bold text-primary sm:h-12 sm:w-12 sm:text-lg">
                 S
               </div>
-              <div className="text-left">
+              <div className="text-left min-w-0">
                 <p className="font-semibold">Dr. Sarah Mitchell</p>
-                <p className="text-sm text-muted-foreground">
+                <p className="text-xs text-muted-foreground sm:text-sm">
                   Physics Professor, Stanford University
                 </p>
               </div>
@@ -483,7 +527,7 @@ export default function LandingPage() {
       {/* ───── CTA ───── */}
       <section className="border-t bg-muted/30 py-20">
         <div className="mx-auto max-w-7xl px-4 sm:px-6">
-          <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-primary to-purple-600 p-10 text-center text-white sm:p-16">
+          <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-primary to-cyan-600 p-10 text-center text-white sm:p-16">
             <div className="absolute -right-10 -top-10 h-40 w-40 rounded-full bg-white/10 blur-2xl" />
             <div className="absolute -bottom-10 -left-10 h-40 w-40 rounded-full bg-white/10 blur-2xl" />
 

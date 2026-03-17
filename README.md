@@ -22,7 +22,7 @@ Frontend (Next.js 14)  →  Backend (FastAPI)  →  Ollama (LLM + Embeddings)
 
 ## Prerequisites
 
-- **Python 3.11+**
+- **Python 3.9+** (3.11+ recommended)
 - **Node.js 18+**
 - **Ollama** installed and running ([ollama.ai](https://ollama.ai))
 - **Supabase** project ([supabase.com](https://supabase.com))
@@ -54,7 +54,7 @@ ollama pull llama3
 
 ```bash
 cd backend
-python -m venv venv
+python3 -m venv venv
 
 # Windows
 venv\Scripts\activate
@@ -76,9 +76,12 @@ uvicorn app.main:app --reload --port 8000
 ```bash
 cd frontend
 
-# Copy and fill in environment variables
-cp .env.example .env.local
-# Edit .env.local with your Supabase and API settings
+# Create and fill in environment variables
+cat > .env.local <<'EOF'
+NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
+NEXT_PUBLIC_API_URL=http://localhost:8000
+EOF
 
 npm install
 npm run dev

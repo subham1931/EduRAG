@@ -1,3 +1,6 @@
+from __future__ import annotations
+
+from typing import Optional
 from fastapi import APIRouter, Depends, HTTPException
 from app.models.schemas import NotesRequest, NotesResponse, SaveNotesRequest, TokenPayload
 from app.services.notes_service import generate_notes, save_notes, get_saved_notes, get_note_by_id, delete_note, restore_note, get_deleted_notes
@@ -104,7 +107,7 @@ async def restore_note_endpoint(
 
 @router.get("/deleted/notes")
 async def list_deleted_notes(
-    subject_id: str | None = None,
+    subject_id: Optional[str] = None,
     teacher: TokenPayload = Depends(get_current_teacher),
 ):
     try:

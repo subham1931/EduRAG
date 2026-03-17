@@ -1,7 +1,10 @@
+from __future__ import annotations
+
+from typing import Optional
 from supabase import create_client, Client
 from app.config import get_settings
 
-_client: Client | None = None
+_client: Optional[Client] = None
 
 
 def get_supabase() -> Client:

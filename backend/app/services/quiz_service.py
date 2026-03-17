@@ -1,3 +1,6 @@
+from __future__ import annotations
+
+from typing import Optional
 from app.rag.retriever import retrieve_relevant_chunks, format_context
 from app.rag.llm import generate_quiz_json
 from app.services.subject_service import get_subject_by_id
@@ -7,8 +10,8 @@ from app.utils.supabase_client import get_supabase
 async def generate_quiz(
     subject_id: str,
     teacher_id: str,
-    topic: str | None = None,
-    instructions: str | None = None,
+    topic: Optional[str] = None,
+    instructions: Optional[str] = None,
     mcq_count: int = 5,
     short_count: int = 0,
     long_count: int = 0,
@@ -92,7 +95,7 @@ async def get_quizzes(teacher_id: str, subject_id: str) -> list[dict]:
     return result.data
 
 
-async def get_quiz_by_id(quiz_id: str, teacher_id: str) -> dict | None:
+async def get_quiz_by_id(quiz_id: str, teacher_id: str) -> Optional[dict]:
     supabase = get_supabase()
     result = (
         supabase.table("quizzes")
@@ -137,7 +140,7 @@ async def restore_quiz(quiz_id: str, teacher_id: str) -> bool:
     return len(result.data) > 0
 
 
-async def get_deleted_quizzes(teacher_id: str, subject_id: str | None = None) -> list[dict]:
+async def get_deleted_quizzes(teacher_id: str, subject_id: Optional[str] = None) -> list[dict]:
     supabase = get_supabase()
     query = (
         supabase.table("quizzes")

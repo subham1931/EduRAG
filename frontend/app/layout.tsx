@@ -10,6 +10,11 @@ export const metadata: Metadata = {
   title: "EduRAG — AI Knowledge Assistant for Teachers",
   description:
     "AI-powered assistant for teachers to manage subjects, ask questions, generate quizzes and notes from course materials.",
+  icons: {
+    icon: "/icon.svg",
+    shortcut: "/icon.svg",
+    apple: "/icon.svg",
+  },
 };
 
 export default function RootLayout({

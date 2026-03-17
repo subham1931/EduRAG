@@ -48,7 +48,7 @@ export default function RegisterPage() {
   return (
     <div className="flex min-h-screen">
       {/* Left panel - decorative */}
-      <div className="relative hidden w-1/2 overflow-hidden bg-gradient-to-br from-primary via-purple-600 to-violet-700 lg:block">
+      <div className="relative hidden w-1/2 overflow-hidden bg-gradient-to-br from-primary via-blue-600 to-cyan-700 lg:block">
         <div className="absolute inset-0">
           <div className="absolute right-10 top-20 h-72 w-72 rounded-full bg-white/10 blur-3xl" />
           <div className="absolute bottom-10 left-20 h-96 w-96 rounded-full bg-white/5 blur-3xl" />

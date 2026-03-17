@@ -1,7 +1,10 @@
+from __future__ import annotations
+
+from typing import Optional
 from app.utils.supabase_client import get_supabase
 
 
-async def create_subject(teacher_id: str, name: str, description: str | None) -> dict:
+async def create_subject(teacher_id: str, name: str, description: Optional[str]) -> dict:
     supabase = get_supabase()
     data = {"teacher_id": teacher_id, "name": name}
     if description:
@@ -23,7 +26,7 @@ async def get_subjects(teacher_id: str) -> list[dict]:
     return result.data
 
 
-async def get_subject_by_id(subject_id: str, teacher_id: str) -> dict | None:
+async def get_subject_by_id(subject_id: str, teacher_id: str) -> Optional[dict]:
     supabase = get_supabase()
     result = (
         supabase.table("subjects")
@@ -50,9 +53,9 @@ async def delete_subject(subject_id: str, teacher_id: str) -> bool:
 async def update_subject(
     subject_id: str,
     teacher_id: str,
-    name: str | None = None,
-    description: str | None = None,
-) -> dict | None:
+    name: Optional[str] = None,
+    description: Optional[str] = None,
+) -> Optional[dict]:
     supabase = get_supabase()
     update_data = {}
     if name:

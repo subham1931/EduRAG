@@ -4,6 +4,7 @@ import React, { useEffect, useState, useCallback } from "react";
 import ReactMarkdown from "react-markdown";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
+import { toast } from "sonner";
 import api from "@/lib/api";
 import { Subject, Document as Doc, QuizQuestion } from "@/types";
 import { useDashboard } from "@/lib/dashboard-context";
@@ -14,8 +15,15 @@ import { NotesDialog } from "@/components/dashboard/notes-dialog";
 import { SubjectSettingsDialog } from "@/components/dashboard/subject-settings-dialog";
 import { DocumentListDialog } from "@/components/dashboard/document-list-dialog";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import {
   Dialog,
   DialogContent,
@@ -26,7 +34,6 @@ import {
 import {
   Loader2,
   MessageSquare,
-  LayoutDashboard,
   HelpCircle,
   FileText,
   Clock,
@@ -36,6 +43,12 @@ import {
   Settings,
   Layers,
   Users,
+  LayoutGrid,
+  List,
+  Search,
+  MoreVertical,
+  Pencil,
+  Trash2,
 } from "lucide-react";
 
 interface GeneratedItem {
@@ -61,6 +74,8 @@ export default function SubjectPage() {
   const [generatedItems, setGeneratedItems] = useState<GeneratedItem[]>([]);
   const [contentLoading, setContentLoading] = useState(true);
   const [viewItem, setViewItem] = useState<GeneratedItem | null>(null);
+  const [quizViewMode, setQuizViewMode] = useState<"grid" | "list">("grid");
+  const [quizSearchQuery, setQuizSearchQuery] = useState("");
 
   const fetchDocuments = useCallback(async () => {
     try {
@@ -127,6 +142,15 @@ export default function SubjectPage() {
 
   const handleQuizGenerated = () => fetchGeneratedContent();
   const handleNotesGenerated = () => fetchGeneratedContent();
+  const handleDeleteQuiz = async (quizId: string) => {
+    try {
+      await api.delete(`/quiz/${quizId}`);
+      await fetchGeneratedContent();
+      toast.success("Quiz moved to recycle bin.");
+    } catch (err: any) {
+      toast.error(err.response?.data?.detail || "Failed to delete quiz.");
+    }
+  };
 
   if (!subject) {
     return (
@@ -160,7 +184,7 @@ export default function SubjectPage() {
         <div className="flex-1 p-8 max-w-2xl mx-auto space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
           <div className="space-y-1">
             <h2 className="text-3xl font-bold tracking-tight">Subject Settings</h2>
-            <p className="text-muted-foreground">Manage your project configuration and visibility.</p>
+            <p className="text-muted-foreground">Manage your subject configuration and visibility.</p>
           </div>
 
           <div className="p-8 border rounded-2xl bg-card shadow-sm space-y-6">
@@ -197,6 +221,9 @@ export default function SubjectPage() {
 
     if (tab === "quizzes") {
       const quizzes = generatedItems.filter(i => i.type === "quiz");
+      const filteredQuizzes = quizzes.filter((quiz) =>
+        quiz.topic.toLowerCase().includes(quizSearchQuery.trim().toLowerCase())
+      );
       return (
         <div className="flex-1 p-8 space-y-6 overflow-auto">
           <div className="flex items-center justify-between">
@@ -204,46 +231,123 @@ export default function SubjectPage() {
               <h2 className="text-3xl font-bold tracking-tight">Questions</h2>
               <p className="text-sm text-muted-foreground mt-1">Practice your knowledge with AI-generated assessment questions.</p>
             </div>
-            <QuizDialog subject={subject!} onGenerated={handleQuizGenerated} />
+            <div className="flex items-center gap-2">
+              <div className="flex items-center rounded-md border bg-card p-1">
+                <button
+                  type="button"
+                  onClick={() => setQuizViewMode("list")}
+                  aria-label="List view"
+                  className={`flex h-7 w-7 items-center justify-center rounded-sm transition-colors ${
+                    quizViewMode === "list"
+                      ? "bg-primary text-primary-foreground"
+                      : "text-muted-foreground hover:bg-muted"
+                  }`}
+                >
+                  <List className="h-4 w-4" />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setQuizViewMode("grid")}
+                  aria-label="Grid view"
+                  className={`flex h-7 w-7 items-center justify-center rounded-sm transition-colors ${
+                    quizViewMode === "grid"
+                      ? "bg-primary text-primary-foreground"
+                      : "text-muted-foreground hover:bg-muted"
+                  }`}
+                >
+                  <LayoutGrid className="h-4 w-4" />
+                </button>
+              </div>
+              <QuizDialog subject={subject!} onGenerated={handleQuizGenerated} />
+            </div>
           </div>
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+          <div className="relative max-w-md">
+            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+            <Input
+              value={quizSearchQuery}
+              onChange={(e) => setQuizSearchQuery(e.target.value)}
+              placeholder="Search questions by quiz title..."
+              className="h-10 pl-9"
+            />
+          </div>
+          <div className={quizViewMode === "grid" ? "grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4" : "grid gap-4 grid-cols-1"}>
             {quizzes.length === 0 ? (
               <div className="col-span-full py-20 flex flex-col items-center justify-center text-muted-foreground">
                 <Sparkles className="h-10 w-10 mb-4 opacity-20" />
                 <p className="font-medium text-lg">No assessments created yet.</p>
                 <p className="text-sm text-center max-w-xs mt-1">Generate evaluation questions using the button above to begin your journey.</p>
               </div>
+            ) : filteredQuizzes.length === 0 ? (
+              <div className="col-span-full py-20 flex flex-col items-center justify-center text-muted-foreground">
+                <Search className="h-10 w-10 mb-4 opacity-20" />
+                <p className="font-medium text-lg">No matching quizzes found.</p>
+                <p className="text-sm text-center max-w-xs mt-1">Try a different keyword.</p>
+              </div>
             ) : (
-              quizzes.map(quiz => (
-                <Link key={quiz.id} href={`/dashboard/${subjectId}/quizzes/${quiz.id}`} className="block h-full">
-                  <div className="p-4 rounded-xl border bg-card hover:border-primary/30 transition-colors flex flex-col h-full">
-                    <div className="flex items-center justify-between mb-4">
-                      <div className="p-2 rounded-lg bg-primary/10 text-primary">
-                        <Sparkles className="h-4 w-4" />
-                      </div>
-                      <span className="text-[9px] font-bold text-muted-foreground/50">
-                        {quiz.timestamp.toLocaleDateString()}
+              filteredQuizzes.map(quiz => (
+                <div
+                  key={quiz.id}
+                  onClick={() => router.push(`/dashboard/${subjectId}/quizzes/${quiz.id}`)}
+                  className="group flex h-full cursor-pointer flex-col rounded-2xl border bg-card p-5 shadow-sm transition-all hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-md"
+                >
+                    <div className="mb-4 flex items-center justify-between">
+                      <span className="rounded-md border bg-muted/30 px-2 py-1 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+                        Quiz
                       </span>
+                      <div className="flex items-center gap-2">
+                        <span className="text-[10px] font-semibold text-muted-foreground/70">
+                          {quiz.timestamp.toLocaleDateString()}
+                        </span>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <button
+                              type="button"
+                              onClick={(e) => e.stopPropagation()}
+                              className="flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+                              aria-label="Quiz actions"
+                            >
+                              <MoreVertical className="h-4 w-4" />
+                            </button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end" onClick={(e) => e.stopPropagation()}>
+                            <DropdownMenuItem
+                              onSelect={(e) => {
+                                e.preventDefault();
+                                router.push(`/dashboard/${subjectId}/quizzes/${quiz.id}?edit=true`);
+                              }}
+                            >
+                              <Pencil className="mr-2 h-4 w-4" />
+                              Update
+                            </DropdownMenuItem>
+                            <DropdownMenuItem
+                              className="text-destructive focus:text-destructive"
+                              onSelect={(e) => {
+                                e.preventDefault();
+                                handleDeleteQuiz(quiz.id);
+                              }}
+                            >
+                              <Trash2 className="mr-2 h-4 w-4" />
+                              Delete
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </div>
                     </div>
 
                     <div className="flex-1">
-                      <h3 className="text-base font-semibold mb-1 line-clamp-1">
+                      <h3 className="mb-2 line-clamp-2 text-base font-semibold leading-snug">
                         {quiz.topic}
                       </h3>
-                      <div className="flex items-center gap-1.5">
-                        <div className="h-1 w-1 rounded-full bg-emerald-500" />
-                        <p className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
-                          {quiz.detail}
-                        </p>
-                      </div>
+                      <p className="inline-flex items-center rounded-md border bg-primary/5 px-2 py-1 text-[10px] font-semibold uppercase tracking-wide text-primary">
+                        {quiz.detail}
+                      </p>
                     </div>
 
-                    <div className="mt-4 pt-3 border-t border-border/50 flex items-center justify-between text-primary">
-                      <span className="text-[10px] font-medium uppercase tracking-wide">Open</span>
-                      <ArrowRight className="h-3 w-3" />
+                    <div className="mt-4 flex items-center justify-between border-t border-border/60 pt-3 text-primary">
+                      <span className="text-[11px] font-semibold">Open quiz</span>
+                      <ArrowRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5" />
                     </div>
-                  </div>
-                </Link>
+                </div>
               ))
             )}
           </div>
@@ -334,7 +438,7 @@ export default function SubjectPage() {
           <div className="flex items-center justify-between">
             <div>
               <h2 className="text-3xl font-bold tracking-tight">Documents</h2>
-              <p className="text-sm text-muted-foreground mt-1">Manage and upload PDF documents for this project.</p>
+              <p className="text-sm text-muted-foreground mt-1">Manage and upload PDF documents for this subject.</p>
             </div>
             <div className="flex items-center gap-2">
               <UploadDialog subject={subject!} onUploadComplete={fetchDocuments} />
@@ -398,10 +502,10 @@ export default function SubjectPage() {
                 </div>
               </div>
               <div className="p-4 rounded-xl border bg-card shadow-sm hover:shadow-md transition-shadow">
-                <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider mb-1">Status</p>
-                <div className="flex items-baseline gap-2">
-                  <div className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
-                  <span className="text-lg font-bold">Live</span>
+                <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider mb-1">Students</p>
+                <div className="flex items-end justify-between">
+                  <span className="text-2xl font-bold">0</span>
+                  <div className="text-primary bg-primary/10 p-2 rounded-lg"><Users className="h-4 w-4" /></div>
                 </div>
               </div>
             </div>
@@ -448,130 +552,84 @@ export default function SubjectPage() {
 
               {/* Learning Insights Graph */}
               <div className="col-span-1 md:col-span-2 lg:col-span-3 rounded-3xl border bg-card shadow-sm overflow-hidden animate-in fade-in slide-in-from-bottom-4 duration-700">
-                <div className="p-6 border-b bg-muted/20 flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <div className="p-2.5 rounded-2xl bg-primary/10 text-primary shadow-inner">
-                      <LayoutDashboard className="h-6 w-6" />
-                    </div>
+                <div className="p-8">
+                  <div className="mb-6 flex items-start justify-between gap-4">
                     <div>
-                      <h2 className="text-lg font-bold tracking-tight">Learning Insights</h2>
-                      <p className="text-xs text-muted-foreground/70">Activity analytics for the past 7 days</p>
+                      <h2 className="text-2xl font-bold tracking-tight">Line Charts</h2>
+                      <div className="mt-4 inline-flex rounded-md border bg-muted/20 p-0.5">
+                        {["12 months", "30 days", "7 days", "24 hours"].map((range, idx) => (
+                          <button
+                            key={range}
+                            type="button"
+                            className={`rounded px-4 py-2 text-xs font-semibold transition-colors ${
+                              idx === 0
+                                ? "bg-background text-foreground shadow-sm"
+                                : "text-muted-foreground hover:text-foreground"
+                            }`}
+                          >
+                            {range}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                    <div className="mt-2 flex items-center gap-2 text-sm text-muted-foreground">
+                      <span className="h-2.5 w-2.5 rounded-full border border-cyan-400" />
+                      Total Profits
                     </div>
                   </div>
-                  <div className="flex items-center gap-6">
-                    <div className="flex items-center gap-2 group cursor-default">
-                      <div className="h-2 w-2 rounded-full bg-primary shadow-[0_0_8px_rgba(var(--primary-rgb),0.5)]" />
-                      <span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground/80 group-hover:text-primary transition-colors">Study Hours</span>
-                    </div>
-                    <div className="flex items-center gap-2 group cursor-default">
-                      <div className="h-2 w-2 rounded-full bg-orange-500 shadow-[0_0_8px_rgba(249,115,22,0.5)]" />
-                      <span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground/80 group-hover:text-orange-500 transition-colors">Avg Score</span>
-                    </div>
-                  </div>
-                </div>
 
-                <div className="p-10 relative bg-gradient-to-b from-transparent to-muted/5">
-                  <div className="relative h-[220px] w-full">
-                    {/* Y-Axis Labels */}
-                    <div className="absolute left-0 h-full flex flex-col justify-between text-[10px] font-black text-muted-foreground/10 pointer-events-none select-none">
-                      <span>100</span>
-                      <span>50</span>
+                  <div className="relative h-[320px]">
+                    <div className="absolute left-0 top-6 bottom-12 flex flex-col justify-between text-xs font-semibold text-muted-foreground/70">
+                      <span>60k</span>
+                      <span>50k</span>
+                      <span>40k</span>
+                      <span>30k</span>
+                      <span>20k</span>
+                      <span>10k</span>
                       <span>0</span>
                     </div>
 
-                    {/* The Graph Area */}
-                    <div className="absolute left-12 right-4 top-0 bottom-0">
-                      {/* Subtle Grid System */}
-                      <div className="absolute inset-0 grid grid-cols-7 gap-0 pointer-events-none">
-                        {[...Array(8)].map((_, i) => (
-                          <div key={i} className="border-l border-dashed border-muted-foreground/5 h-full" />
+                    <div className="absolute left-10 right-0 top-6 bottom-12">
+                      <div className="absolute inset-0">
+                        {[0, 1, 2, 3, 4, 5, 6].map((i) => (
+                          <div
+                            key={i}
+                            className="absolute left-0 right-0 border-t border-border/60"
+                            style={{ top: `${(i * 100) / 6}%` }}
+                          />
                         ))}
                       </div>
-                      {[0, 50, 100].map((v) => (
-                        <div
-                          key={v}
-                          className="absolute w-full border-t border-dashed border-muted-foreground/10"
-                          style={{ bottom: `${v}%` }}
-                        />
-                      ))}
 
-                      {/* SVG Chart */}
-                      <svg
-                        viewBox="0 0 100 100"
-                        preserveAspectRatio="none"
-                        className="w-full h-full overflow-visible drop-shadow-2xl"
-                      >
+                      <svg viewBox="0 0 1200 260" preserveAspectRatio="none" className="h-full w-full">
                         <defs>
-                          <linearGradient id="primaryArea" x1="0" y1="0" x2="0" y2="1">
-                            <stop offset="0%" stopColor="var(--primary)" stopOpacity="0.4" />
-                            <stop offset="100%" stopColor="var(--primary)" stopOpacity="0" />
+                          <linearGradient id="profitAreaFill" x1="0" y1="0" x2="0" y2="1">
+                            <stop offset="0%" stopColor="#22d3ee" stopOpacity="0.35" />
+                            <stop offset="100%" stopColor="#22d3ee" stopOpacity="0.02" />
                           </linearGradient>
-                          <filter id="glow" x="-20%" y="-20%" width="140%" height="140%">
-                            <feGaussianBlur stdDeviation="2" result="blur" />
-                            <feComposite in="SourceGraphic" in2="blur" operator="over" />
-                          </filter>
                         </defs>
 
-                        {/* Engagement Area - Smooth Cubic Path */}
                         <path
-                          d="M 0,85 C 15,80 25,20 40,40 C 55,60 65,10 80,30 C 90,40 100,20 100,20 V 100 H 0 Z"
-                          className="fill-[url(#primaryArea)] stroke-primary stroke-[0.8]"
+                          d="M0,240 C25,180 55,150 95,145 C145,138 175,30 230,28 C280,26 315,40 360,145 C390,212 430,166 470,145 C520,118 555,67 610,95 C655,117 685,190 740,205 C790,216 835,205 885,140 C930,80 970,20 1030,28 C1085,36 1120,95 1160,240 L0,240 Z"
+                          fill="url(#profitAreaFill)"
                         />
-
-                        {/* Accuracy Line - Contrasting Path */}
                         <path
-                          d="M 0,70 C 20,60 35,85 50,45 C 65,5 80,40 100,35"
-                          className="fill-none stroke-orange-500 stroke-[0.6]"
-                          strokeDasharray="1.5,1.5"
+                          d="M0,240 C25,180 55,150 95,145 C145,138 175,30 230,28 C280,26 315,40 360,145 C390,212 430,166 470,145 C520,118 555,67 610,95 C655,117 685,190 740,205 C790,216 835,205 885,140 C930,80 970,20 1030,28 C1085,36 1120,95 1160,240"
+                          fill="none"
+                          stroke="#22d3ee"
+                          strokeWidth="3"
+                          strokeLinecap="round"
                         />
-
-                        {/* Glowing Data Points */}
-                        {[
-                          { x: 40, y: 40 },
-                          { x: 80, y: 30 },
-                          { x: 100, y: 20 }
-                        ].map((p, i) => (
-                          <g key={i}>
-                            <circle cx={p.x} cy={p.y} r="2.5" className="fill-primary/20 animate-pulse" />
-                            <circle cx={p.x} cy={p.y} r="1.2" className="fill-background stroke-primary stroke-[0.5]" />
-                          </g>
-                        ))}
                       </svg>
                     </div>
-                  </div>
 
-                  {/* X-Axis Labels with refined spacing */}
-                  <div className="flex justify-between pl-12 pr-4 pt-8 text-[10px] font-black uppercase tracking-[0.25em] text-muted-foreground/20">
-                    <span>Mon</span>
-                    <span>Tue</span>
-                    <span>Wed</span>
-                    <span>Thu</span>
-                    <span>Fri</span>
-                    <span>Sat</span>
-                    <span>Sun</span>
-                  </div>
-                </div>
-
-                <div className="px-8 py-5 bg-muted/20 border-t border-border/50 flex items-center justify-between">
-                  <div className="flex gap-10">
-                    <div className="flex flex-col gap-1">
-                      <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/40">Knowledge Retention</span>
-                      <div className="flex items-center gap-2">
-                        <span className="text-lg font-bold text-emerald-500">94.8%</span>
-                        <div className="h-1 w-12 rounded-full bg-white/5 overflow-hidden">
-                          <div className="h-full bg-emerald-500 w-[94%]" />
-                        </div>
-                      </div>
-                    </div>
-                    <div className="flex flex-col gap-1">
-                      <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/40">Weekly Momentum</span>
-                      <span className="text-lg font-bold text-primary">+12.4%</span>
+                    <div className="absolute bottom-0 left-10 right-0 grid grid-cols-12 text-xs font-semibold text-muted-foreground/80">
+                      {["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"].map((m) => (
+                        <span key={m} className="text-center">
+                          {m}
+                        </span>
+                      ))}
                     </div>
                   </div>
-                  <Button variant="outline" size="sm" className="bg-background/50 hover:bg-background border-border/50 text-[11px] font-bold h-10 px-6 rounded-2xl shadow-sm transition-all hover:shadow-md hover:-translate-y-0.5 group">
-                    Analytics Dashboard
-                    <ArrowRight className="ml-2 h-4 w-4 transition-transform group-hover:translate-x-1" />
-                  </Button>
                 </div>
               </div>
             </div>
@@ -605,7 +663,7 @@ export default function SubjectPage() {
           <TabsList className="grid w-full grid-cols-2 rounded-none border-t h-14 bg-background px-2 shrink-0">
             <TabsTrigger value="content" className="data-[state=active]:bg-primary/5 data-[state=active]:text-primary h-10">
               <Files className="mr-2 h-4 w-4" />
-              Project
+              Subject
             </TabsTrigger>
             <TabsTrigger value="chat" className="data-[state=active]:bg-primary/5 data-[state=active]:text-primary h-10">
               <MessageSquare className="mr-2 h-4 w-4" />

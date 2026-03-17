@@ -72,7 +72,7 @@ export function ProjectSidebar() {
                     <div className="flex h-5 w-5 items-center justify-center rounded-md bg-primary/10">
                         <LayoutDashboard className="h-3 w-3 text-primary" />
                     </div>
-                    <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground/70">Project Context</span>
+                    <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground/70">Subject Context</span>
                 </div>
                 <h2 className="text-sm font-bold tracking-tight truncate pr-4 text-foreground/90">{subject?.name || "Loading..."}</h2>
             </div>
@@ -108,7 +108,7 @@ export function ProjectSidebar() {
                     className="flex items-center gap-2 px-3 py-2 rounded-md text-[11px] font-black uppercase tracking-widest text-muted-foreground hover:text-foreground hover:bg-muted/30 transition-all"
                 >
                     <ChevronLeft className="h-3.5 w-3.5" />
-                    All Projects
+                    All Subjects
                 </Link>
             </div>
         </aside>

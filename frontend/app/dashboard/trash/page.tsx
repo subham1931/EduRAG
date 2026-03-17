@@ -1,12 +1,12 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { Trash2, RotateCcw, Trash, Loader2, ChevronLeft, FileText, HelpCircle } from "lucide-react";
+import { Trash2, RotateCcw, Trash, Loader2, LayoutGrid, List, Search } from "lucide-react";
 import { toast } from "sonner";
 import api from "@/lib/api";
 import { Button } from "@/components/ui/button";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { useRouter, useSearchParams } from "next/navigation";
+import { Input } from "@/components/ui/input";
+import { useSearchParams } from "next/navigation";
 import { cn } from "@/lib/utils";
 import {
     Dialog,
@@ -15,6 +15,13 @@ import {
     DialogHeader,
     DialogTitle,
 } from "@/components/ui/dialog";
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { MoreVertical } from "lucide-react";
 
 interface DeletedItem {
     id: string;
@@ -30,9 +37,12 @@ export default function TrashPage() {
     const [notes, setNotes] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const [isDeleting, setIsDeleting] = useState(false);
+    const [isDeletingAll, setIsDeletingAll] = useState(false);
     const [isRestoring, setIsRestoring] = useState(false);
     const [itemToDelete, setItemToDelete] = useState<{ id: string; type: "quiz" | "note" } | null>(null);
-    const router = useRouter();
+    const [isDeleteAllOpen, setIsDeleteAllOpen] = useState(false);
+    const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
+    const [searchQuery, setSearchQuery] = useState("");
     const searchParams = useSearchParams();
     const subjectId = searchParams.get("subjectId");
 
@@ -87,6 +97,29 @@ export default function TrashPage() {
         }
     };
 
+    const handleDeleteAll = async () => {
+        if (allItems.length === 0) return;
+        setIsDeletingAll(true);
+        try {
+            await Promise.all(
+                allItems.map((item) => {
+                    const endpoint =
+                        item.type === "quiz"
+                            ? `/quiz/${item.id}?permanent=true`
+                            : `/note/${item.id}?permanent=true`;
+                    return api.delete(endpoint);
+                })
+            );
+            toast.success("All items deleted permanently.");
+            setIsDeleteAllOpen(false);
+            fetchTrash();
+        } catch (err) {
+            toast.error("Failed to delete all items.");
+        } finally {
+            setIsDeletingAll(false);
+        }
+    };
+
     const allItems: DeletedItem[] = [
         ...quizzes.map(q => ({
             id: q.id,
@@ -103,29 +136,80 @@ export default function TrashPage() {
             deleted_at: n.created_at
         }))
     ];
+    const filteredItems = allItems.filter((item) => {
+        const q = searchQuery.trim().toLowerCase();
+        if (!q) return true;
+        return (
+            item.title.toLowerCase().includes(q) ||
+            item.subject_name.toLowerCase().includes(q) ||
+            item.type.toLowerCase().includes(q)
+        );
+    });
 
     return (
-        <div className="flex-1 flex flex-col h-full bg-background overflow-hidden animate-in fade-in duration-500">
-            <div className="flex h-16 shrink-0 items-center justify-between border-b bg-card/50 px-6">
-                <div className="flex items-center gap-4">
-                    <Button variant="ghost" size="icon" onClick={() => router.back()} className="rounded-full">
-                        <ChevronLeft className="h-5 w-5" />
-                    </Button>
+        <div className="flex-1 p-8 space-y-6 overflow-auto animate-in fade-in duration-500">
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                     <div>
-                        <h1 className="text-xl font-black">Recycle Bin</h1>
-                        <p className="text-xs text-muted-foreground font-medium">Manage deleted assessments and notes</p>
+                        <h2 className="text-3xl font-bold tracking-tight">Recycle Bin</h2>
+                        <p className="text-sm text-muted-foreground mt-1">
+                            Manage deleted assessments and notes.
+                        </p>
+                    </div>
+                    <Button
+                        variant="destructive"
+                        size="sm"
+                        onClick={() => setIsDeleteAllOpen(true)}
+                        disabled={loading || allItems.length === 0 || isDeletingAll}
+                        className="h-9 self-start"
+                    >
+                        {isDeletingAll ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Trash2 className="mr-2 h-4 w-4" />}
+                        Delete All
+                    </Button>
+                </div>
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                    <div className="relative w-full max-w-md">
+                        <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                        <Input
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)}
+                            placeholder="Search deleted items..."
+                            className="h-10 pl-9"
+                        />
+                    </div>
+                    <div className="flex items-center rounded-md border bg-card p-1">
+                        <button
+                            type="button"
+                            onClick={() => setViewMode("list")}
+                            aria-label="List view"
+                            className={`flex h-7 w-7 items-center justify-center rounded-sm transition-colors ${
+                                viewMode === "list"
+                                    ? "bg-primary text-primary-foreground"
+                                    : "text-muted-foreground hover:bg-muted"
+                                }`}
+                        >
+                            <List className="h-4 w-4" />
+                        </button>
+                        <button
+                            type="button"
+                            onClick={() => setViewMode("grid")}
+                            aria-label="Grid view"
+                            className={`flex h-7 w-7 items-center justify-center rounded-sm transition-colors ${
+                                viewMode === "grid"
+                                    ? "bg-primary text-primary-foreground"
+                                    : "text-muted-foreground hover:bg-muted"
+                                }`}
+                        >
+                            <LayoutGrid className="h-4 w-4" />
+                        </button>
                     </div>
                 </div>
-            </div>
-
-            <ScrollArea className="flex-1 p-6">
-                <div className="max-w-4xl mx-auto space-y-4">
+                <div className={viewMode === "grid" ? "grid gap-4 sm:grid-cols-2 lg:grid-cols-3" : "grid gap-4 grid-cols-1"}>
                     {loading ? (
-                        <div className="flex items-center justify-center py-20">
+                        <div className="col-span-full flex items-center justify-center py-20">
                             <Loader2 className="h-8 w-8 animate-spin text-primary" />
                         </div>
                     ) : allItems.length === 0 ? (
-                        <div className="flex flex-col items-center justify-center py-20 text-center space-y-4">
+                        <div className="col-span-full flex flex-col items-center justify-center py-20 text-center space-y-4">
                             <div className="h-20 w-20 rounded-3xl bg-muted/30 flex items-center justify-center">
                                 <Trash2 className="h-10 w-10 text-muted-foreground/30" />
                             </div>
@@ -134,82 +218,96 @@ export default function TrashPage() {
                                 <p className="text-sm text-muted-foreground">Items you delete will appear here for 30 days.</p>
                             </div>
                         </div>
+                    ) : filteredItems.length === 0 ? (
+                        <div className="col-span-full flex flex-col items-center justify-center py-20 text-center space-y-4">
+                            <div className="h-20 w-20 rounded-3xl bg-muted/30 flex items-center justify-center">
+                                <Search className="h-10 w-10 text-muted-foreground/30" />
+                            </div>
+                            <div>
+                                <h2 className="text-xl font-bold">No matching deleted items</h2>
+                                <p className="text-sm text-muted-foreground">Try a different search keyword.</p>
+                            </div>
+                        </div>
                     ) : (
-                        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                            {allItems.map((item) => (
+                            filteredItems.map((item) => (
                                 <div
                                     key={`${item.type}-${item.id}`}
                                     className={cn(
-                                        "p-5 rounded-[2rem] border bg-card/50 hover:bg-card transition-all duration-500 flex flex-col group relative overflow-hidden shadow-sm hover:shadow-xl hover:border-primary/30",
-                                        item.type === "quiz" ? "hover:shadow-primary/5" : "hover:shadow-orange-500/5 hover:border-orange-500/30"
+                                        "group flex h-full flex-col rounded-2xl border bg-card p-5 shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md",
+                                        item.type === "quiz" ? "hover:border-primary/40" : "hover:border-orange-500/40"
                                     )}
                                 >
-                                    <div className="flex items-center justify-between mb-4 relative z-10">
-                                        <div className={cn(
-                                            "p-2.5 rounded-xl shadow-sm transition-all duration-500",
-                                            item.type === "quiz" ? "bg-primary/10 text-primary group-hover:bg-primary group-hover:text-primary-foreground" : "bg-orange-500/10 text-orange-500 group-hover:bg-orange-500 group-hover:text-white"
+                                    <div className="mb-4 flex items-center justify-between">
+                                        <span className={cn(
+                                            "rounded-md border px-2 py-1 text-[10px] font-semibold uppercase tracking-wide",
+                                            item.type === "quiz"
+                                                ? "bg-muted/30 text-muted-foreground"
+                                                : "bg-orange-500/5 text-orange-500 border-orange-200 dark:border-orange-900/40"
                                         )}>
-                                            {item.type === "quiz" ? <HelpCircle className="h-5 w-5" /> : <FileText className="h-5 w-5" />}
-                                        </div>
-                                        <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/40">
-                                            {new Date(item.deleted_at).toLocaleDateString()}
+                                            {item.type === "quiz" ? "Quiz" : "Note"}
                                         </span>
+                                        <div className="flex items-center gap-2">
+                                            <span className="text-[10px] font-semibold text-muted-foreground/70">
+                                                {new Date(item.deleted_at).toLocaleDateString()}
+                                            </span>
+                                            <DropdownMenu>
+                                                <DropdownMenuTrigger asChild>
+                                                    <Button variant="ghost" size="icon" className="h-7 w-7 rounded-md">
+                                                        <MoreVertical className="h-4 w-4" />
+                                                    </Button>
+                                                </DropdownMenuTrigger>
+                                                <DropdownMenuContent align="end">
+                                                    <DropdownMenuItem
+                                                        onSelect={(e) => {
+                                                            e.preventDefault();
+                                                            handleRestore(item.id, item.type);
+                                                        }}
+                                                        disabled={isRestoring}
+                                                    >
+                                                        <RotateCcw className="mr-2 h-4 w-4" />
+                                                        Restore
+                                                    </DropdownMenuItem>
+                                                    <DropdownMenuItem
+                                                        onSelect={(e) => {
+                                                            e.preventDefault();
+                                                            setItemToDelete({ id: item.id, type: item.type });
+                                                        }}
+                                                        disabled={isDeleting}
+                                                        className="text-destructive focus:text-destructive"
+                                                    >
+                                                        <Trash className="mr-2 h-4 w-4" />
+                                                        Delete Permanently
+                                                    </DropdownMenuItem>
+                                                </DropdownMenuContent>
+                                            </DropdownMenu>
+                                        </div>
                                     </div>
 
-                                    <div className="relative z-10 flex-1 mb-6">
-                                        <h3 className="text-lg font-black mb-1.5 tracking-tight group-hover:text-primary transition-colors duration-300 line-clamp-2">
+                                    <div className="mb-6 flex-1">
+                                        <h3 className="mb-2 line-clamp-2 text-base font-semibold leading-snug">
                                             {item.title}
                                         </h3>
                                         <div className="flex items-center gap-2">
                                             <span className={cn(
-                                                "px-2 py-0.5 rounded-md text-[9px] font-black uppercase tracking-widest",
-                                                item.type === "quiz" ? "bg-primary/5 text-primary" : "bg-orange-500/5 text-orange-500"
+                                                "inline-flex items-center rounded-md border px-2 py-1 text-[10px] font-semibold uppercase tracking-wide",
+                                                item.type === "quiz"
+                                                    ? "bg-primary/5 text-primary"
+                                                    : "bg-orange-500/10 text-orange-600 border-orange-200 dark:border-orange-900/40"
                                             )}>
-                                                {item.type}
+                                                Deleted
                                             </span>
                                             <span className="h-1 w-1 rounded-full bg-border" />
-                                            <span className="text-[9px] font-bold text-muted-foreground/60 uppercase tracking-wider line-clamp-1">
+                                            <span className="line-clamp-1 text-[10px] font-medium text-muted-foreground">
                                                 {item.subject_name}
                                             </span>
                                         </div>
                                     </div>
 
-                                    <div className="flex items-center gap-2 mt-auto pt-4 border-t border-border/50 relative z-10">
-                                        <Button
-                                            variant="ghost"
-                                            size="sm"
-                                            onClick={() => handleRestore(item.id, item.type)}
-                                            disabled={isRestoring}
-                                            className="flex-1 rounded-xl font-black text-[10px] uppercase tracking-wider h-10 hover:bg-primary/5 hover:text-primary transition-all"
-                                        >
-                                            <RotateCcw className="mr-2 h-3.5 w-3.5" />
-                                            Restore
-                                        </Button>
-                                        <Button
-                                            variant="ghost"
-                                            size="sm"
-                                            onClick={() => setItemToDelete({ id: item.id, type: item.type })}
-                                            disabled={isDeleting}
-                                            className="h-10 w-10 p-0 rounded-xl text-muted-foreground hover:text-destructive hover:bg-destructive/5 transition-all"
-                                            title="Delete Permanently"
-                                        >
-                                            <Trash className="h-4 w-4" />
-                                        </Button>
-                                    </div>
-
-                                    {/* Visual accent */}
-                                    <div className={cn(
-                                        "absolute -bottom-4 -right-4 h-24 w-24 opacity-0 group-hover:opacity-[0.03] transition-all duration-700 rotate-12 group-hover:rotate-0 pointer-events-none",
-                                        item.type === "quiz" ? "text-primary" : "text-orange-500"
-                                    )}>
-                                        {item.type === "quiz" ? <HelpCircle className="h-full w-full" /> : <FileText className="h-full w-full" />}
-                                    </div>
+                                    <div className="mt-auto border-t border-border/60 pt-3" />
                                 </div>
-                            ))}
-                        </div>
+                            ))
                     )}
                 </div>
-            </ScrollArea>
 
             {/* Permanent Delete Confirmation Dialog */}
             <Dialog open={!!itemToDelete} onOpenChange={(open) => !open && setItemToDelete(null)}>
@@ -228,6 +326,30 @@ export default function TrashPage() {
                         <Button onClick={handlePermanentDelete} variant="destructive" disabled={isDeleting} className="rounded-xl font-black px-8 h-12">
                             {isDeleting ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
                             Delete Forever
+                        </Button>
+                    </div>
+                </DialogContent>
+            </Dialog>
+
+            {/* Delete All Confirmation Dialog */}
+            <Dialog open={isDeleteAllOpen} onOpenChange={setIsDeleteAllOpen}>
+                <DialogContent className="max-w-md rounded-[2rem] p-8 border-none shadow-2xl">
+                    <DialogHeader>
+                        <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-destructive/10 text-destructive mb-4">
+                            <Trash2 className="h-6 w-6" />
+                        </div>
+                        <DialogTitle className="text-2xl font-black text-destructive">Delete all items?</DialogTitle>
+                        <DialogDescription className="text-base font-medium">
+                            This will permanently remove all {allItems.length} items in the recycle bin. This action cannot be undone.
+                        </DialogDescription>
+                    </DialogHeader>
+                    <div className="flex justify-end gap-3 mt-6">
+                        <Button variant="ghost" onClick={() => setIsDeleteAllOpen(false)} className="rounded-xl font-black">
+                            Cancel
+                        </Button>
+                        <Button onClick={handleDeleteAll} variant="destructive" disabled={isDeletingAll} className="rounded-xl font-black px-8 h-12">
+                            {isDeletingAll ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+                            Delete All
                         </Button>
                     </div>
                 </DialogContent>

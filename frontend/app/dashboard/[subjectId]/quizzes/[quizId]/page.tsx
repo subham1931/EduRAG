@@ -559,16 +559,31 @@ export default function QuizDetailsPage() {
     return (
         <div className="flex-1 flex flex-col h-full bg-background overflow-hidden">
             {/* Header */}
-            <div className="flex h-16 shrink-0 items-center justify-between border-b bg-card/50 px-6 gap-4">
-                <div className="flex items-center gap-4 min-w-0">
+            <div className="flex min-h-16 shrink-0 items-center justify-between gap-4 border-b bg-card/70 px-4 py-3 backdrop-blur-sm lg:px-6">
+                <div className="flex min-w-0 items-center gap-3">
                     <Button
                         variant="ghost"
                         size="icon"
                         onClick={() => router.back()}
-                        className="rounded-full h-9 w-9 -ml-2"
+                        className="h-9 w-9 shrink-0 rounded-full"
                     >
                         <ChevronLeft className="h-5 w-5" />
                     </Button>
+                    <div className="min-w-0">
+                        <h1 className="truncate text-base font-bold tracking-tight md:text-lg">
+                            {quiz?.title || "Assessment"}
+                        </h1>
+                        <div className="mt-0.5 flex items-center gap-2">
+                            <span className="rounded-md border bg-muted/40 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+                                {questions.length} Questions
+                            </span>
+                            {editing && (
+                                <span className="rounded-md border border-primary/30 bg-primary/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-primary">
+                                    Editing
+                                </span>
+                            )}
+                        </div>
+                    </div>
                 </div>
 
                 <div className="flex items-center gap-3">
@@ -684,7 +699,17 @@ export default function QuizDetailsPage() {
             </div>
 
             <ScrollArea className="flex-1">
-                <div className="w-full p-4 lg:p-6 space-y-6 pb-32" id="quiz-content">
+                <div className="w-full p-4 lg:p-6 pb-32" id="quiz-content">
+                    <div className="mx-auto max-w-6xl space-y-6">
+                        <div className="rounded-2xl border bg-muted/20 px-4 py-3">
+                            <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+                                <span className="font-semibold">Question Bank</span>
+                                <span>•</span>
+                                <span>Reorder by drag-and-drop in edit mode</span>
+                                <span>•</span>
+                                <span>Export as PDF from the menu</span>
+                            </div>
+                        </div>
                     {/* Paper View (Hidden in UI, only for PDF capture) */}
                     <div id="quiz-paper-view" style={{ display: "none" }} className="bg-white text-black p-12 pb-24 relative font-serif">
                         {/* Subtle Watermark */}
@@ -726,42 +751,43 @@ export default function QuizDetailsPage() {
                     </div>
 
 
-                    {/* Questions list */}
-                    <div className="space-y-4">
-                        <DndContext
-                            sensors={sensors}
-                            collisionDetection={closestCenter}
-                            onDragEnd={handleDragEnd}
-                        >
-                            <SortableContext
-                                items={questions.map(q => q.id)}
-                                strategy={verticalListSortingStrategy}
+                        {/* Questions list */}
+                        <div className="space-y-4">
+                            <DndContext
+                                sensors={sensors}
+                                collisionDetection={closestCenter}
+                                onDragEnd={handleDragEnd}
                             >
-                                {questions.map((q, qIdx) => (
-                                    <SortableQuestionItem
-                                        key={q.id}
-                                        q={q}
-                                        qIdx={qIdx}
-                                        editing={editing}
-                                        updateQuestion={updateQuestion}
-                                        handleDeleteQuestion={handleDeleteQuestion}
-                                    />
-                                ))}
-                            </SortableContext>
-                        </DndContext>
-                    </div>
-
-                    {questions.length === 0 && (
-                        <div className="py-20 flex flex-col items-center justify-center text-center space-y-4">
-                            <div className="p-4 rounded-full bg-muted">
-                                <HelpCircle className="h-10 w-10 text-muted-foreground/30" />
-                            </div>
-                            <div className="space-y-1">
-                                <p className="font-bold text-lg text-muted-foreground">No questions found</p>
-                                <p className="text-sm text-muted-foreground/60">Generate or add questions to build your quiz.</p>
-                            </div>
+                                <SortableContext
+                                    items={questions.map(q => q.id)}
+                                    strategy={verticalListSortingStrategy}
+                                >
+                                    {questions.map((q, qIdx) => (
+                                        <SortableQuestionItem
+                                            key={q.id}
+                                            q={q}
+                                            qIdx={qIdx}
+                                            editing={editing}
+                                            updateQuestion={updateQuestion}
+                                            handleDeleteQuestion={handleDeleteQuestion}
+                                        />
+                                    ))}
+                                </SortableContext>
+                            </DndContext>
                         </div>
-                    )}
+
+                        {questions.length === 0 && (
+                            <div className="flex flex-col items-center justify-center space-y-4 py-20 text-center">
+                                <div className="rounded-full bg-muted p-4">
+                                    <HelpCircle className="h-10 w-10 text-muted-foreground/30" />
+                                </div>
+                                <div className="space-y-1">
+                                    <p className="text-lg font-bold text-muted-foreground">No questions found</p>
+                                    <p className="text-sm text-muted-foreground/60">Generate or add questions to build your quiz.</p>
+                                </div>
+                            </div>
+                        )}
+                    </div>
                 </div>
             </ScrollArea>
 

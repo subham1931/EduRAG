@@ -1,3 +1,6 @@
+from __future__ import annotations
+
+from typing import Optional
 from app.utils.supabase_client import get_supabase
 from app.rag.embeddings import generate_embedding
 from app.config import get_settings
@@ -7,7 +10,7 @@ async def retrieve_relevant_chunks(
     query: str,
     subject_id: str,
     teacher_id: str,
-    top_k: int | None = None,
+    top_k: Optional[int] = None,
 ) -> list[dict]:
     settings = get_settings()
     if top_k is None:

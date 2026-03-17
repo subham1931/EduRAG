@@ -1,3 +1,6 @@
+from __future__ import annotations
+
+from typing import Optional
 from app.utils.supabase_client import get_supabase
 
 
@@ -6,7 +9,7 @@ async def save_message(
     subject_id: str,
     role: str,
     content: str,
-    sources: list[dict] | None = None,
+    sources: Optional[list[dict]] = None,
 ) -> dict:
     supabase = get_supabase()
     data = {

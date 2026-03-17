@@ -285,14 +285,14 @@ export function ChatPanel({ subject }: ChatPanelProps) {
       <div className="p-4 lg:p-6 bg-gradient-to-t from-background via-background/95 to-transparent">
         <div className="mx-auto max-w-4xl relative group">
           <div className="absolute -inset-1 bg-primary/20 rounded-2xl blur opacity-0 group-focus-within:opacity-100 transition-opacity duration-500" />
-          <div className="relative flex items-center bg-card border border-border/50 rounded-2xl shadow-lg ring-1 ring-black/5 hover:ring-primary/20 transition-all">
+          <div className="relative flex items-center overflow-hidden rounded-2xl border border-border/50 bg-card shadow-lg ring-1 ring-black/5 transition-all hover:ring-primary/20 focus-within:ring-primary/30">
             <Input
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={handleKeyDown}
               placeholder={`Type a question about ${subject.name}...`}
               disabled={loading}
-              className="flex-1 bg-transparent border-none focus-visible:ring-0 h-14 px-6 text-sm"
+              className="h-14 flex-1 rounded-none border-none bg-transparent px-6 text-sm focus-visible:outline-none focus-visible:ring-0"
             />
             <div className="flex items-center gap-2 pr-3">
               <div className="h-6 w-[1px] bg-border/50 mx-1" />

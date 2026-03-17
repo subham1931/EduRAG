@@ -30,18 +30,35 @@ async def generate_response(prompt: str, system_prompt: str = "") -> str:
     timeout = httpx.Timeout(300.0, connect=30.0)
     async with httpx.AsyncClient(timeout=timeout) as client:
         try:
+            chat_payload = {
+                "model": settings.ollama_llm_model,
+                "messages": messages,
+                "stream": False,
+                "options": {
+                    "temperature": 0.3,  # Low temperature keeps it focused
+                    "num_predict": 4096,
+                },
+            }
             response = await client.post(
                 f"{settings.ollama_base_url}/api/chat",
-                json={
-                    "model": settings.ollama_llm_model,
-                    "messages": messages,
-                    "stream": False,
-                    "options": {
-                        "temperature": 0.3, # Low temperature keeps it focused
-                        "num_predict": 4096,
-                    },
-                },
+                json=chat_payload,
             )
+            if response.status_code == 404:
+                # Older Ollama builds may not expose /api/chat; fallback to /api/generate.
+                generate_prompt = f"System:\n{final_system_content}\n\nUser:\n{prompt}"
+                response = await client.post(
+                    f"{settings.ollama_base_url}/api/generate",
+                    json={
+                        "model": settings.ollama_llm_model,
+                        "prompt": generate_prompt,
+                        "stream": False,
+                        "options": chat_payload["options"],
+                    },
+                )
+                response.raise_for_status()
+                data = response.json()
+                return data.get("response", "").strip()
+
             response.raise_for_status()
             data = response.json()
             return data["message"]["content"].strip()
