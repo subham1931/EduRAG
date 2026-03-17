@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { GraduationCap, Loader2, ArrowLeft, MailCheck } from "lucide-react";
+import { GraduationCap, Loader2, MailCheck } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 
 export default function RegisterPage() {
@@ -111,14 +111,6 @@ export default function RegisterPage() {
       {/* Right panel - form */}
       <div className="flex w-full items-center justify-center px-4 lg:w-1/2">
         <div className="w-full max-w-md">
-          <Link
-            href="/"
-            className="mb-8 inline-flex items-center gap-2 text-sm text-muted-foreground transition-colors hover:text-foreground lg:hidden"
-          >
-            <ArrowLeft className="h-4 w-4" />
-            Back to home
-          </Link>
-
           <div className="lg:hidden mb-6 flex items-center gap-2.5">
             <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary/10">
               <GraduationCap className="h-5 w-5 text-primary" />
@@ -147,7 +139,7 @@ export default function RegisterPage() {
                 </p>
               </div>
 
-              <Link href="/login" className="mt-6 inline-block">
+              <Link href="/login" className="mt-6 block w-full">
                 <Button className="h-11 w-full rounded-lg text-base" size="lg">
                   Go to Sign In
                 </Button>
@@ -218,10 +210,10 @@ export default function RegisterPage() {
                 </Button>
 
                 <p className="text-center text-sm text-muted-foreground">
-                  Already have an account?{" "}
+                  <span className="block sm:inline">Already have an account?</span>{" "}
                   <Link
                     href="/login"
-                    className="font-medium text-primary hover:underline"
+                    className="mt-1 inline-block font-medium text-primary hover:underline sm:mt-0"
                   >
                     Sign In
                   </Link>

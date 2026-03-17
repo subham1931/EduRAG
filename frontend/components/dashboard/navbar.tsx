@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useTheme } from "next-themes";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
@@ -12,20 +12,27 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { ChevronRight, GraduationCap, LogOut, Sun, Moon, Monitor } from "lucide-react";
+import { ChevronRight, GraduationCap, LogOut, Sun, Moon, Monitor, Menu } from "lucide-react";
 import { supabase } from "@/lib/supabase";
-import { useParams } from "next/navigation";
+import { useParams, usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useDashboard } from "@/lib/dashboard-context";
 
 export function Navbar() {
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
   const params = useParams();
-  const subjectId = params.subjectId as string;
+  const subjectId = (params.subjectId as string) || searchParams.get("subjectId");
+  const tab = searchParams.get("tab") || "overview";
   const { subjects, quizTitle } = useDashboard();
 
   const currentSubject = subjects.find(s => s.id === subjectId);
 
   const [userEmail, setUserEmail] = useState("");
   const [mounted, setMounted] = useState(false);
+  const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
+  const mobileSidebarRef = useRef<HTMLElement | null>(null);
+  const menuButtonRef = useRef<HTMLButtonElement | null>(null);
   const { theme, setTheme } = useTheme();
 
   useEffect(() => {
@@ -37,17 +44,80 @@ export function Navbar() {
     });
   }, []);
 
+  useEffect(() => {
+    if (!mobileSidebarOpen) return;
+
+    const handleOutsideClick = (event: MouseEvent | TouchEvent) => {
+      const target = event.target as Node;
+      if (mobileSidebarRef.current?.contains(target)) return;
+      if (menuButtonRef.current?.contains(target)) return;
+      setMobileSidebarOpen(false);
+    };
+
+    document.addEventListener("mousedown", handleOutsideClick);
+    document.addEventListener("touchstart", handleOutsideClick);
+    return () => {
+      document.removeEventListener("mousedown", handleOutsideClick);
+      document.removeEventListener("touchstart", handleOutsideClick);
+    };
+  }, [mobileSidebarOpen]);
+
   const handleLogout = async () => {
     await supabase.auth.signOut();
     window.location.href = "/login";
   };
 
   const initials = userEmail ? userEmail.charAt(0).toUpperCase() : "U";
+  const globalItems = [
+    { label: "Subjects", href: "/dashboard" },
+    { label: "Global Chat", href: "/dashboard?global=chat" },
+    { label: "Usage Statistics", href: "/dashboard?global=usage" },
+    { label: "Organization", href: "/dashboard?global=settings" },
+  ];
+  const subjectItems = subjectId
+    ? [
+        { label: "Subject Overview", href: `/dashboard/${subjectId}?tab=overview` },
+        { label: "AI Chat", href: `/dashboard/${subjectId}?tab=chat` },
+        { label: "Questions", href: `/dashboard/${subjectId}?tab=quizzes` },
+        { label: "Study Notes", href: `/dashboard/${subjectId}?tab=notes` },
+        { label: "Documents", href: `/dashboard/${subjectId}?tab=docs` },
+        { label: "Students", href: `/dashboard/${subjectId}?tab=students` },
+        { label: "Subject Settings", href: `/dashboard/${subjectId}?tab=settings` },
+        { label: "Recycle Bin", href: `/dashboard/trash?subjectId=${subjectId}` },
+      ]
+    : [];
+  const mobileNavItems = subjectId ? subjectItems : globalItems;
+  const isItemActive = (item: { label: string; href: string }) => {
+    const targetTab = item.href.includes("tab=") ? item.href.split("tab=")[1] : "";
+    const isSubjectRoot = subjectId ? pathname === `/dashboard/${subjectId}` : false;
+    if (subjectId) {
+      return (
+        (isSubjectRoot && tab === targetTab) ||
+        (item.label === "Questions" && pathname.includes("/quizzes/")) ||
+        (item.label === "Study Notes" && pathname.includes("/notes/")) ||
+        (item.label === "Recycle Bin" && pathname === "/dashboard/trash")
+      );
+    }
+    return pathname === item.href;
+  };
 
   return (
     <nav className="sticky top-0 z-50 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="flex h-14 items-center justify-between px-4 sm:px-6">
         <div className="flex items-center gap-4">
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-9 w-9 md:hidden"
+            onClick={() => setMobileSidebarOpen((prev) => !prev)}
+            ref={menuButtonRef}
+          >
+            <Menu className="h-4 w-4" />
+            <span className="sr-only">
+              {mobileSidebarOpen ? "Close navigation sidebar" : "Open navigation sidebar"}
+            </span>
+          </Button>
+
           <Link href="/dashboard" className="flex items-center gap-2 group transition-opacity hover:opacity-80">
             <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-primary-foreground">
               <GraduationCap className="h-4 w-4" />
@@ -139,6 +209,45 @@ export function Navbar() {
           </DropdownMenu>
         </div>
       </div>
+
+      {mobileSidebarOpen && (
+        <div
+          className="fixed inset-0 top-14 z-[70] md:hidden"
+          onClick={() => setMobileSidebarOpen(false)}
+        >
+          <div className="absolute inset-0 bg-background/70 backdrop-blur-sm" />
+          <aside
+            ref={mobileSidebarRef}
+            className="absolute left-0 top-0 z-10 h-[calc(100vh-3.5rem)] w-[280px] border-r bg-card p-4 shadow-xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex h-full flex-col">
+              <div className="mb-3 px-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                Navigation
+              </div>
+              <div className="flex flex-1 flex-col gap-1.5">
+                {mobileNavItems.map((item) => (
+                  <button
+                    key={item.label}
+                    type="button"
+                    onClick={() => {
+                      setMobileSidebarOpen(false);
+                      router.push(item.href);
+                    }}
+                    className={`flex h-10 w-full items-center rounded-lg px-3 text-left text-sm font-medium transition-colors ${
+                      isItemActive(item)
+                        ? "bg-primary/10 text-primary"
+                        : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                    }`}
+                  >
+                    {item.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </aside>
+        </div>
+      )}
     </nav>
   );
 }

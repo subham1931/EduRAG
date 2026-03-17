@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { GraduationCap, Loader2, ArrowLeft, Eye, EyeOff } from "lucide-react";
+import { GraduationCap, Loader2, Eye, EyeOff } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 
 export default function LoginPage() {
@@ -78,22 +78,14 @@ export default function LoginPage() {
       </div>
 
       {/* Right panel - form */}
-      <div className="flex w-full items-center justify-center px-4 lg:w-1/2">
-        <div className="w-full max-w-md">
-          <Link
-            href="/"
-            className="mb-8 inline-flex items-center gap-2 text-sm text-muted-foreground transition-colors hover:text-foreground lg:hidden"
-          >
-            <ArrowLeft className="h-4 w-4" />
-            Back to home
-          </Link>
-
-          <div className="lg:hidden mb-6 flex items-center gap-2.5">
+      <div className="flex w-full items-stretch justify-center px-4 lg:w-1/2 lg:items-center">
+        <div className="flex min-h-screen w-full max-w-md flex-col justify-center py-8 lg:min-h-0 lg:py-0">
+          <Link href="/" className="lg:hidden mb-6 flex items-center gap-2.5">
             <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary/10">
               <GraduationCap className="h-5 w-5 text-primary" />
             </div>
             <span className="text-lg font-bold">EduRAG</span>
-          </div>
+          </Link>
 
           <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">
             Sign in to your account
@@ -160,10 +152,10 @@ export default function LoginPage() {
             </Button>
 
             <p className="text-center text-sm text-muted-foreground">
-              Don&apos;t have an account?{" "}
+              <span className="block sm:inline">Don&apos;t have an account?</span>{" "}
               <Link
                 href="/register"
-                className="font-medium text-primary hover:underline"
+                className="mt-1 inline-block font-medium text-primary hover:underline sm:mt-0"
               >
                 Create one
               </Link>
