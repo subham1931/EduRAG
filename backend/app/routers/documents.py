@@ -1,14 +1,56 @@
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form
-from app.models.schemas import DocumentResponse, TokenPayload
+from app.models.schemas import (
+    DocumentPreviewUrlResponse,
+    DocumentResponse,
+    DocumentUpdate,
+    TokenPayload,
+)
 from app.services.document_service import (
-    process_and_store_pdf,
-    get_documents,
     delete_document,
+    get_document_preview_signed_url,
+    get_documents,
+    process_and_store_pdf,
+    update_document_filename,
 )
 from app.services.subject_service import get_subject_by_id
 from app.utils.auth import get_current_teacher
 
 router = APIRouter(prefix="/documents", tags=["documents"])
+
+
+@router.get("/preview/{document_id}", response_model=DocumentPreviewUrlResponse)
+async def get_document_preview_url(
+    document_id: str,
+    teacher: TokenPayload = Depends(get_current_teacher),
+):
+    url = await get_document_preview_signed_url(document_id, teacher.sub)
+    if not url:
+        raise HTTPException(
+            status_code=404,
+            detail="Preview not available (file missing or uploaded before storage was enabled).",
+        )
+    return {"url": url}
+
+
+@router.patch("/item/{document_id}", response_model=DocumentResponse)
+async def update_document_endpoint(
+    document_id: str,
+    body: DocumentUpdate,
+    teacher: TokenPayload = Depends(get_current_teacher),
+):
+    try:
+        doc = await update_document_filename(
+            document_id, teacher.sub, body.filename
+        )
+        if not doc:
+            raise HTTPException(status_code=404, detail="Document not found")
+        return doc
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 @router.post("/upload", response_model=DocumentResponse)

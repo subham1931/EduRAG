@@ -6,8 +6,8 @@
 -- 1. Enable pgvector extension
 CREATE EXTENSION IF NOT EXISTS vector;
 
--- 2. Subjects table
-CREATE TABLE IF NOT EXISTS public.subjects (
+-- 2. Organizations (subjects belong to an organization)
+CREATE TABLE IF NOT EXISTS public.organizations (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     teacher_id UUID NOT NULL,
     name TEXT NOT NULL,
@@ -15,9 +15,22 @@ CREATE TABLE IF NOT EXISTS public.subjects (
     created_at TIMESTAMPTZ DEFAULT now()
 );
 
-CREATE INDEX IF NOT EXISTS idx_subjects_teacher ON public.subjects(teacher_id);
+CREATE INDEX IF NOT EXISTS idx_organizations_teacher ON public.organizations(teacher_id);
 
--- 3. Documents table
+-- 3. Subjects table
+CREATE TABLE IF NOT EXISTS public.subjects (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    teacher_id UUID NOT NULL,
+    organization_id UUID NOT NULL REFERENCES public.organizations(id) ON DELETE CASCADE,
+    name TEXT NOT NULL,
+    description TEXT,
+    created_at TIMESTAMPTZ DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS idx_subjects_teacher ON public.subjects(teacher_id);
+CREATE INDEX IF NOT EXISTS idx_subjects_organization ON public.subjects(organization_id);
+
+-- 4. Documents table
 CREATE TABLE IF NOT EXISTS public.documents (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     teacher_id UUID NOT NULL,
@@ -25,13 +38,14 @@ CREATE TABLE IF NOT EXISTS public.documents (
     filename TEXT NOT NULL,
     page_count INTEGER NOT NULL DEFAULT 0,
     chunk_count INTEGER NOT NULL DEFAULT 0,
+    storage_path TEXT,
     created_at TIMESTAMPTZ DEFAULT now()
 );
 
 CREATE INDEX IF NOT EXISTS idx_documents_subject ON public.documents(subject_id);
 CREATE INDEX IF NOT EXISTS idx_documents_teacher ON public.documents(teacher_id);
 
--- 4. Document chunks table with vector embeddings
+-- 5. Document chunks table with vector embeddings
 CREATE TABLE IF NOT EXISTS public.document_chunks (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     teacher_id UUID NOT NULL,
@@ -52,7 +66,7 @@ CREATE INDEX IF NOT EXISTS idx_chunks_embedding ON public.document_chunks
     USING hnsw (embedding vector_cosine_ops)
     WITH (m = 16, ef_construction = 64);
 
--- 5. Quizzes table (optional storage)
+-- 6. Quizzes table (optional storage)
 CREATE TABLE IF NOT EXISTS public.quizzes (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     teacher_id UUID NOT NULL,
@@ -102,7 +116,7 @@ BEGIN
 END;
 $$;
 
--- 5b. Generated notes table
+-- 6b. Generated notes table
 CREATE TABLE IF NOT EXISTS public.generated_notes (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     teacher_id UUID NOT NULL,
@@ -115,7 +129,7 @@ CREATE TABLE IF NOT EXISTS public.generated_notes (
 CREATE INDEX IF NOT EXISTS idx_notes_subject ON public.generated_notes(subject_id);
 CREATE INDEX IF NOT EXISTS idx_notes_teacher ON public.generated_notes(teacher_id);
 
--- 6b. Chat messages table
+-- 6c. Chat messages table
 CREATE TABLE IF NOT EXISTS public.chat_messages (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     teacher_id UUID NOT NULL,
@@ -131,6 +145,7 @@ CREATE INDEX IF NOT EXISTS idx_chat_subject ON public.chat_messages(subject_id);
 CREATE INDEX IF NOT EXISTS idx_chat_created ON public.chat_messages(subject_id, created_at);
 
 -- 7. Row Level Security
+ALTER TABLE public.organizations ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.subjects ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.documents ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.document_chunks ENABLE ROW LEVEL SECURITY;
@@ -139,6 +154,9 @@ ALTER TABLE public.generated_notes ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.chat_messages ENABLE ROW LEVEL SECURITY;
 
 -- Service role bypass (backend uses service_role key)
+CREATE POLICY "Service role full access organizations" ON public.organizations
+    FOR ALL USING (true) WITH CHECK (true);
+
 CREATE POLICY "Service role full access subjects" ON public.subjects
     FOR ALL USING (true) WITH CHECK (true);
 

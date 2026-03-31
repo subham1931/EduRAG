@@ -7,14 +7,14 @@ class Settings(BaseSettings):
     supabase_service_key: str
     supabase_jwt_secret: str = ""
     ollama_base_url: str = "http://localhost:11434"
-    # ollama_llm_model: str = "llama3"
-    ollama_llm_model: str = "qwen3:8b"
-    # ollama_llm_model: str = "qwen3:4b"
+    ollama_llm_model: str = "mistral:7b"
     ollama_embed_model: str = "nomic-embed-text"
     chunk_size: int = 300
     chunk_overlap: int = 30
     top_k: int = 5
     cors_origins: str = "http://localhost:3000"
+    # Supabase Storage bucket for original PDFs (preview). Create bucket "documents" in dashboard.
+    documents_bucket: str = "documents"
 
     class Config:
         env_file = ".env"

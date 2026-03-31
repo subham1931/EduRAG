@@ -80,7 +80,7 @@ export function SubjectSettingsDialog({
             await api.delete(`/subjects/${subject.id}`);
             toast.success("Subject deleted successfully");
             setIsOpen(false);
-            router.push("/dashboard");
+            router.push(`/dashboard/organization/${subject.organization_id}`);
             onUpdate(); // To refresh the sidebar/list
         } catch (err) {
             console.error("Failed to delete subject:", err);

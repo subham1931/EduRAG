@@ -13,17 +13,29 @@ import { UploadDialog } from "@/components/dashboard/upload-dialog";
 import { QuizDialog } from "@/components/dashboard/quiz-dialog";
 import { NotesDialog } from "@/components/dashboard/notes-dialog";
 import { SubjectSettingsDialog } from "@/components/dashboard/subject-settings-dialog";
-import { DocumentListDialog } from "@/components/dashboard/document-list-dialog";
+import { PdfPreviewDialog } from "@/components/dashboard/pdf-preview-dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import {
   Dialog,
   DialogContent,
@@ -40,7 +52,7 @@ import {
   Sparkles,
   Files,
   ArrowRight,
-  Settings,
+  Eye,
   Layers,
   Users,
   LayoutGrid,
@@ -76,6 +88,12 @@ export default function SubjectPage() {
   const [viewItem, setViewItem] = useState<GeneratedItem | null>(null);
   const [quizViewMode, setQuizViewMode] = useState<"grid" | "list">("grid");
   const [quizSearchQuery, setQuizSearchQuery] = useState("");
+  const [previewDocument, setPreviewDocument] = useState<Doc | null>(null);
+  const [renameDoc, setRenameDoc] = useState<Doc | null>(null);
+  const [renameValue, setRenameValue] = useState("");
+  const [renameSaving, setRenameSaving] = useState(false);
+  const [deleteDoc, setDeleteDoc] = useState<Doc | null>(null);
+  const [deleteBusy, setDeleteBusy] = useState(false);
 
   const fetchDocuments = useCallback(async () => {
     try {
@@ -136,12 +154,53 @@ export default function SubjectPage() {
       fetchDocuments();
       fetchGeneratedContent();
     } else if (subjects.length > 0) {
-      router.push("/dashboard");
+      router.push("/dashboard/organization");
     }
   }, [subjects, subjectId, router, fetchDocuments, fetchGeneratedContent]);
 
   const handleQuizGenerated = () => fetchGeneratedContent();
   const handleNotesGenerated = () => fetchGeneratedContent();
+  const handleRenameDocument = async () => {
+    if (!renameDoc || !renameValue.trim()) return;
+    setRenameSaving(true);
+    try {
+      await api.patch(`/documents/item/${renameDoc.id}`, {
+        filename: renameValue.trim(),
+      });
+      toast.success("Document renamed");
+      setRenameDoc(null);
+      await fetchDocuments();
+    } catch (err: unknown) {
+      const msg =
+        err && typeof err === "object" && "response" in err
+          ? (err as { response?: { data?: { detail?: string } } }).response?.data?.detail
+          : undefined;
+      toast.error(typeof msg === "string" ? msg : "Failed to rename document");
+    } finally {
+      setRenameSaving(false);
+    }
+  };
+
+  const handleDeleteDocument = async () => {
+    if (!deleteDoc) return;
+    setDeleteBusy(true);
+    try {
+      await api.delete(`/documents/${deleteDoc.id}`);
+      toast.success("Document deleted");
+      setDeleteDoc(null);
+      if (previewDocument?.id === deleteDoc.id) setPreviewDocument(null);
+      await fetchDocuments();
+    } catch (err: unknown) {
+      const msg =
+        err && typeof err === "object" && "response" in err
+          ? (err as { response?: { data?: { detail?: string } } }).response?.data?.detail
+          : undefined;
+      toast.error(typeof msg === "string" ? msg : "Failed to delete document");
+    } finally {
+      setDeleteBusy(false);
+    }
+  };
+
   const handleDeleteQuiz = async (quizId: string) => {
     try {
       await api.delete(`/quiz/${quizId}`);
@@ -163,7 +222,7 @@ export default function SubjectPage() {
   const RenderContent = () => {
     if (tab === "chat") {
       return (
-        <div className="flex-1 flex flex-col overflow-hidden bg-background">
+        <div className="flex-1 flex flex-col overflow-hidden bg-background/50">
           <div className="flex h-14 items-center justify-between px-6 border-b bg-card/50">
             <div className="flex items-center gap-3">
               <div className="p-2 rounded-lg bg-primary/10 text-primary">
@@ -451,20 +510,79 @@ export default function SubjectPage() {
                 <p>No documents found. Start by uploading one!</p>
               </div>
             ) : (
-              documents.map(doc => (
-                <div key={doc.id} className="p-4 rounded-xl border bg-card hover:border-primary/50 transition-all flex items-center justify-between shadow-sm group">
+              documents.map((doc) => (
+                <div
+                  key={doc.id}
+                  role="button"
+                  tabIndex={0}
+                  onClick={() => setPreviewDocument(doc)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" || e.key === " ") {
+                      e.preventDefault();
+                      setPreviewDocument(doc);
+                    }
+                  }}
+                  className="group flex cursor-pointer items-center justify-between rounded-xl border bg-card p-4 shadow-sm transition-all hover:border-primary/50"
+                >
                   <div className="flex items-center gap-3">
-                    <div className="p-2 rounded-lg bg-primary/10 text-primary group-hover:scale-110 transition-transform">
+                    <div className="rounded-lg bg-primary/10 p-2 text-primary transition-transform group-hover:scale-110">
                       <FileText className="h-5 w-5" />
                     </div>
                     <div>
-                      <p className="text-sm font-bold truncate max-w-[150px]">{doc.filename}</p>
+                      <p className="max-w-[150px] truncate text-sm font-bold">{doc.filename}</p>
                       <p className="text-xs text-muted-foreground">{doc.page_count || 0} pages</p>
                     </div>
                   </div>
-                  <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-destructive opacity-0 group-hover:opacity-100 transition-opacity">
-                    <Settings className="h-4 w-4" />
-                  </Button>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        className="h-10 w-10 shrink-0 text-muted-foreground hover:bg-muted"
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        <MoreVertical className="h-4 w-4" />
+                        <span className="sr-only">Document options</span>
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent
+                      align="end"
+                      className="w-48"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      <DropdownMenuItem
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setPreviewDocument(doc);
+                        }}
+                      >
+                        <Eye className="mr-2 h-4 w-4" />
+                        Preview
+                      </DropdownMenuItem>
+                      <DropdownMenuItem
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setRenameDoc(doc);
+                          setRenameValue(doc.filename);
+                        }}
+                      >
+                        <Pencil className="mr-2 h-4 w-4" />
+                        Rename
+                      </DropdownMenuItem>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem
+                        className="text-destructive focus:text-destructive"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setDeleteDoc(doc);
+                        }}
+                      >
+                        <Trash2 className="mr-2 h-4 w-4" />
+                        Delete
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
                 </div>
               ))
             )}
@@ -475,7 +593,7 @@ export default function SubjectPage() {
 
     // Default: overview
     return (
-      <div className="flex-1 flex flex-col h-full overflow-hidden bg-muted/20">
+      <div className="flex-1 flex flex-col h-full overflow-hidden bg-background/50">
         <ScrollArea className="flex-1">
           <div className="max-w-7xl mx-auto p-4 sm:p-6 lg:p-8 space-y-8 pb-20">
             {/* Quick Stats Grid */}
@@ -524,7 +642,18 @@ export default function SubjectPage() {
                     </div>
                   </div>
                   <div className="flex items-center gap-2">
-                    <DocumentListDialog subject={subject!} documents={documents} onRefresh={fetchDocuments} />
+                    <Button variant="outline" size="sm" className="gap-2" asChild>
+                      <Link href={`/dashboard/${subjectId}?tab=docs`}>
+                        <Files className="h-4 w-4" />
+                        <span className="hidden sm:inline">Manage Docs</span>
+                        <span className="sm:hidden">Docs</span>
+                        {documents.length > 0 && (
+                          <span className="flex h-4 w-4 items-center justify-center rounded-full bg-primary/10 text-[10px] font-bold text-primary">
+                            {documents.length}
+                          </span>
+                        )}
+                      </Link>
+                    </Button>
                     <UploadDialog subject={subject!} onUploadComplete={fetchDocuments} />
                   </div>
                 </div>
@@ -537,12 +666,26 @@ export default function SubjectPage() {
                   ) : (
                     <div className="grid gap-3 sm:grid-cols-2">
                       {documents.slice(0, 4).map((doc) => (
-                        <div key={doc.id} className="flex items-center justify-between p-3 rounded-xl border bg-muted/20 hover:bg-muted/40 transition-colors">
-                          <div className="flex items-center gap-3 truncate">
-                            <FileText className="h-4 w-4 text-primary shrink-0" />
-                            <span className="text-xs font-semibold truncate">{doc.filename}</span>
+                        <div
+                          key={doc.id}
+                          role="button"
+                          tabIndex={0}
+                          onClick={() => setPreviewDocument(doc)}
+                          onKeyDown={(e) => {
+                            if (e.key === "Enter" || e.key === " ") {
+                              e.preventDefault();
+                              setPreviewDocument(doc);
+                            }
+                          }}
+                          className="flex cursor-pointer items-center justify-between rounded-xl border bg-muted/20 p-3 transition-colors hover:bg-muted/40"
+                        >
+                          <div className="flex min-w-0 flex-1 items-center gap-3 truncate">
+                            <FileText className="h-4 w-4 shrink-0 text-primary" />
+                            <span className="truncate text-xs font-semibold">{doc.filename}</span>
                           </div>
-                          <span className="text-[9px] text-muted-foreground font-bold whitespace-nowrap">{doc.page_count} P</span>
+                          <span className="whitespace-nowrap text-[9px] font-bold text-muted-foreground">
+                            {doc.page_count} P
+                          </span>
                         </div>
                       ))}
                     </div>
@@ -678,7 +821,78 @@ export default function SubjectPage() {
         <RenderContent />
       </div>
 
-      {/* No viewers here, they are on separate routes now */}
+      <PdfPreviewDialog
+        document={previewDocument}
+        open={previewDocument !== null}
+        onOpenChange={(open) => {
+          if (!open) setPreviewDocument(null);
+        }}
+      />
+
+      <Dialog
+        open={renameDoc !== null}
+        onOpenChange={(open) => {
+          if (!open) setRenameDoc(null);
+        }}
+      >
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Rename document</DialogTitle>
+            <DialogDescription>
+              Update the display name. The file must keep a `.pdf` extension.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-2 py-2">
+            <Label htmlFor="doc-rename">Filename</Label>
+            <Input
+              id="doc-rename"
+              value={renameValue}
+              onChange={(e) => setRenameValue(e.target.value)}
+              placeholder="e.g. chapter_1.pdf"
+              onKeyDown={(e) => {
+                if (e.key === "Enter") handleRenameDocument();
+              }}
+            />
+          </div>
+          <div className="flex justify-end gap-2">
+            <Button variant="outline" onClick={() => setRenameDoc(null)}>
+              Cancel
+            </Button>
+            <Button
+              onClick={handleRenameDocument}
+              disabled={renameSaving || !renameValue.trim()}
+            >
+              {renameSaving ? "Saving…" : "Save"}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      <AlertDialog open={deleteDoc !== null} onOpenChange={(open) => !open && setDeleteDoc(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete document?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will remove{" "}
+              <span className="font-medium text-foreground">{deleteDoc?.filename}</span> and all
+              indexed chunks from this subject. This cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              onClick={(e) => {
+                e.preventDefault();
+                handleDeleteDocument();
+              }}
+              disabled={deleteBusy}
+            >
+              {deleteBusy ? "Deleting…" : "Delete"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </main>
   );
 }

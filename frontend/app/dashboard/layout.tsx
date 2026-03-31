@@ -68,13 +68,11 @@ export default function DashboardLayout({
         {/* Global Navbar */}
         <Navbar />
 
-        <div className="flex flex-1 overflow-hidden relative">
-          {/* Supabase-style Mini Sidebar (Global & Contextual) */}
-          <div className="hidden md:block w-[240px] shrink-0">
-            <MiniSidebar />
-          </div>
+        <div className="flex flex-1 overflow-hidden relative bg-background/50">
+          <MiniSidebar />
+          <div className="hidden md:block w-24 shrink-0" aria-hidden />
 
-          <main className="flex-1 overflow-auto bg-muted/20 pb-10">
+          <main className="flex-1 overflow-auto pb-10">
             {children}
           </main>
         </div>

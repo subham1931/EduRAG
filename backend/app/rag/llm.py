@@ -1,6 +1,29 @@
 import httpx
 import json
+from typing import Optional
+
 from app.config import get_settings
+
+
+def _ollama_missing_model_message(
+    status_code: int, response_text: str, model: str
+) -> Optional[str]:
+    """Ollama returns 404 when the model is not pulled — not when /api/chat is missing."""
+    if status_code != 404:
+        return None
+    try:
+        data = json.loads(response_text)
+        err = (data.get("error") or "").lower()
+    except (json.JSONDecodeError, TypeError):
+        return None
+    if "not found" in err and "model" in err:
+        return (
+            f"**Error:** The LLM model `{model}` is not available in Ollama.\n\n"
+            f"- Install it: `ollama pull {model}`\n"
+            f"- Or set `OLLAMA_LLM_MODEL` in the backend `.env` to a model you already have (`ollama list`).\n\n"
+            f"*Ollama: {data.get('error', '')}*"
+        )
+    return None
 
 
 async def generate_response(prompt: str, system_prompt: str = "") -> str:
@@ -44,6 +67,11 @@ async def generate_response(prompt: str, system_prompt: str = "") -> str:
                 json=chat_payload,
             )
             if response.status_code == 404:
+                missing = _ollama_missing_model_message(
+                    response.status_code, response.text, settings.ollama_llm_model
+                )
+                if missing:
+                    return missing
                 # Older Ollama builds may not expose /api/chat; fallback to /api/generate.
                 generate_prompt = f"System:\n{final_system_content}\n\nUser:\n{prompt}"
                 response = await client.post(
@@ -55,6 +83,12 @@ async def generate_response(prompt: str, system_prompt: str = "") -> str:
                         "options": chat_payload["options"],
                     },
                 )
+                if response.status_code == 404:
+                    missing = _ollama_missing_model_message(
+                        response.status_code, response.text, settings.ollama_llm_model
+                    )
+                    if missing:
+                        return missing
                 response.raise_for_status()
                 data = response.json()
                 return data.get("response", "").strip()

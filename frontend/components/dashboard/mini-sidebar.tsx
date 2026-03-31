@@ -11,15 +11,53 @@ import {
     MessageSquare,
     Files,
     Users,
-    ChevronLeft,
-    FileText,
     Trash2,
+    Info,
+    NotebookText,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
+    Tooltip,
+    TooltipContent,
     TooltipProvider,
+    TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { useDashboard } from "@/lib/dashboard-context";
+
+function globalQueryFromHref(href: string): string | null {
+    try {
+        return new URL(href, "http://localhost").searchParams.get("global");
+    } catch {
+        return null;
+    }
+}
+
+/** Lucide icons: hover scale/rotate + stroke pop (motion-safe; reduced-motion users get color-only). */
+const navIconClass =
+    "h-[18px] w-[18px] origin-center [stroke-width:1.5px] transition-all duration-300 ease-[cubic-bezier(0.34,1.3,0.64,1)] group-hover:scale-110 group-hover:-rotate-6 group-hover:[stroke-width:2.25px] group-active:scale-95 motion-reduce:transition-colors motion-reduce:duration-200 motion-reduce:group-hover:scale-100 motion-reduce:group-hover:rotate-0";
+
+function NavIconButton({
+    active,
+    children,
+    className,
+}: {
+    active: boolean;
+    children: React.ReactNode;
+    className?: string;
+}) {
+    return (
+        <span
+            className={cn(
+                "flex h-9 w-9 shrink-0 items-center justify-center overflow-visible rounded-full transition-colors",
+                active
+                    ? "bg-zinc-900 text-white shadow-sm dark:bg-white dark:text-zinc-900"
+                    : "text-zinc-400 hover:bg-zinc-100 hover:text-zinc-600 dark:text-zinc-500 dark:hover:bg-zinc-800 dark:hover:text-zinc-300",
+                className
+            )}
+        >
+            {children}
+        </span>
+    );
+}
 
 export function MiniSidebar() {
     const pathname = usePathname();
@@ -27,91 +65,111 @@ export function MiniSidebar() {
     const searchParams = useSearchParams();
     const subjectId = (params.subjectId as string) || searchParams.get("subjectId");
     const tab = searchParams.get("tab") || "overview";
-    const { subjects } = useDashboard();
 
     const globalItems = [
-        { icon: Home, label: "Subjects", href: "/dashboard" },
-        { icon: MessageSquare, label: "Global Chat", href: "/dashboard?global=chat" },
+        { icon: Home, label: "Organizations", href: "/dashboard/organization" },
+        { icon: Info, label: "Global Chat", href: "/dashboard?global=chat" },
         { icon: LayoutDashboard, label: "Usage Statistics", href: "/dashboard?global=usage" },
-        { icon: Settings, label: "Organization", href: "/dashboard?global=settings" },
+        { icon: Settings, label: "Organization settings", href: "/dashboard?global=settings" },
     ];
 
     const projectItems = [
         { icon: LayoutDashboard, label: "Subject Overview", href: `/dashboard/${subjectId}?tab=overview` },
         { icon: MessageSquare, label: "AI Chat", href: `/dashboard/${subjectId}?tab=chat` },
         { icon: HelpCircle, label: "Questions", href: `/dashboard/${subjectId}?tab=quizzes` },
-        { icon: FileText, label: "Study Notes", href: `/dashboard/${subjectId}?tab=notes` },
+        { icon: NotebookText, label: "Study Notes", href: `/dashboard/${subjectId}?tab=notes` },
         { icon: Files, label: "Documents", href: `/dashboard/${subjectId}?tab=docs` },
         { icon: Users, label: "Students", href: `/dashboard/${subjectId}?tab=students` },
         { icon: Settings, label: "Subject Settings", href: `/dashboard/${subjectId}?tab=settings` },
     ];
 
     const navItems = subjectId ? projectItems : globalItems;
+    const globalMode = searchParams.get("global");
 
     return (
-        <aside
+        <nav
+            aria-label="Dashboard navigation"
             className={cn(
-                "fixed left-0 top-14 z-40 flex h-[calc(100vh-3.5rem)] w-[240px] flex-col items-center border-r bg-card py-4 dark:bg-background/95 shadow-xl"
+                "fixed left-5 top-1/2 z-40 hidden h-auto w-auto -translate-y-1/2 md:flex md:flex-col",
+                "items-center gap-2",
+                "rounded-full border border-zinc-200/90 bg-white px-2 py-3",
+                "shadow-[0_8px_32px_rgba(15,23,42,0.12)]",
+                "dark:border-zinc-800 dark:bg-zinc-950 dark:shadow-[0_8px_32px_rgba(0,0,0,0.45)]"
             )}
         >
             <TooltipProvider delayDuration={0}>
-                <div className="flex w-full flex-1 flex-col gap-2 px-3">
-
+                <div className="flex flex-col items-center gap-2">
                     {navItems.map((item) => {
                         const targetTab = item.href.split("tab=")[1] || "overview";
                         const isSubjectRoot = pathname === `/dashboard/${subjectId}`;
 
                         const isActive = subjectId
                             ? (isSubjectRoot && tab === targetTab) ||
-                            (item.label === "Questions" && pathname.includes("/quizzes/")) ||
-                            (item.label === "Study Notes" && pathname.includes("/notes/"))
-                            : pathname === item.href;
+                              (item.label === "Questions" && pathname.includes("/quizzes/")) ||
+                              (item.label === "Study Notes" && pathname.includes("/notes/"))
+                            : (() => {
+                                  if (item.href.startsWith("/dashboard/organization")) {
+                                      return (
+                                          pathname === "/dashboard/organization" ||
+                                          pathname.startsWith("/dashboard/organization/")
+                                      );
+                                  }
+                                  if (pathname !== "/dashboard") return false;
+                                  const itemGlobal = globalQueryFromHref(item.href);
+                                  if (itemGlobal === null) return globalMode === null;
+                                  return globalMode === itemGlobal;
+                              })();
 
                         return (
-                            <Link
-                                key={item.label}
-                                href={item.href}
-                                className={cn(
-                                    "group flex h-10 w-full items-center rounded-lg px-2 transition-all",
-                                    isActive
-                                        ? "bg-primary/10 text-primary shadow-sm"
-                                        : "text-muted-foreground hover:bg-muted hover:text-foreground"
-                                )}
-                            >
-                                <item.icon className={cn("h-5 w-5 shrink-0", isActive ? "scale-110" : "group-hover:scale-110 transition-transform")} />
-                                <span className="ml-4 truncate text-sm font-medium whitespace-nowrap">
-                                    {item.label}
-                                </span>
-                            </Link>
+                            <Tooltip key={item.label}>
+                                <TooltipTrigger asChild>
+                                    <Link
+                                        href={item.href}
+                                        className="group rounded-full outline-none focus-visible:ring-2 focus-visible:ring-zinc-400 focus-visible:ring-offset-2"
+                                    >
+                                        <NavIconButton active={isActive}>
+                                            <item.icon
+                                                className={cn(
+                                                    navIconClass,
+                                                    isActive &&
+                                                        "scale-105 [stroke-width:2.25px] motion-reduce:scale-100"
+                                                )}
+                                                aria-hidden
+                                            />
+                                        </NavIconButton>
+                                    </Link>
+                                </TooltipTrigger>
+                                <TooltipContent side="right">{item.label}</TooltipContent>
+                            </Tooltip>
                         );
                     })}
                 </div>
-            </TooltipProvider>
 
-            <div className="mt-auto flex w-full flex-col gap-2 px-3 border-t pt-4 pb-2">
                 {subjectId && (
-                    <Link
-                        href={`/dashboard/trash?subjectId=${subjectId}`}
-                        className={cn(
-                            "group flex h-10 w-full items-center rounded-lg px-2 transition-all",
-                            pathname === "/dashboard/trash"
-                                ? "bg-destructive/10 text-destructive shadow-sm"
-                                : "text-muted-foreground hover:bg-muted hover:text-foreground"
-                        )}
-                    >
-                        <Trash2 className={cn("h-5 w-5 shrink-0", pathname === "/dashboard/trash" ? "scale-110" : "group-hover:scale-110 transition-transform")} />
-                        <span className="ml-4 truncate text-sm font-medium whitespace-nowrap">
-                            Recycle Bin
-                        </span>
-                    </Link>
+                    <div className="flex w-full flex-col items-center gap-2 border-t border-zinc-200 pt-2 dark:border-zinc-800">
+                        <Tooltip>
+                            <TooltipTrigger asChild>
+                                <Link
+                                    href={`/dashboard/trash?subjectId=${subjectId}`}
+                                    className="group rounded-full outline-none focus-visible:ring-2 focus-visible:ring-zinc-400 focus-visible:ring-offset-2"
+                                >
+                                    <NavIconButton active={pathname === "/dashboard/trash"}>
+                                        <Trash2
+                                            className={cn(
+                                                navIconClass,
+                                                pathname === "/dashboard/trash" &&
+                                                    "scale-105 [stroke-width:2.25px] motion-reduce:scale-100"
+                                            )}
+                                            aria-hidden
+                                        />
+                                    </NavIconButton>
+                                </Link>
+                            </TooltipTrigger>
+                            <TooltipContent side="right">Recycle Bin</TooltipContent>
+                        </Tooltip>
+                    </div>
                 )}
-                <button className="group flex h-10 w-full items-center rounded-lg px-2 text-muted-foreground hover:bg-muted hover:text-foreground transition-all">
-                    <HelpCircle className="h-5 w-5 shrink-0" />
-                    <span className="ml-4 truncate text-sm font-medium whitespace-nowrap">
-                        Documentation
-                    </span>
-                </button>
-            </div>
-        </aside>
+            </TooltipProvider>
+        </nav>
     );
 }

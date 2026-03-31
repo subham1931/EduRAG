@@ -1,12 +1,27 @@
 from __future__ import annotations
 
 from typing import Optional
+
+from app.services.organization_service import get_organization_by_id
 from app.utils.supabase_client import get_supabase
 
 
-async def create_subject(teacher_id: str, name: str, description: Optional[str]) -> dict:
+async def create_subject(
+    teacher_id: str,
+    organization_id: str,
+    name: str,
+    description: Optional[str],
+) -> dict:
+    org = await get_organization_by_id(organization_id, teacher_id)
+    if not org:
+        raise ValueError("Organization not found")
+
     supabase = get_supabase()
-    data = {"teacher_id": teacher_id, "name": name}
+    data = {
+        "teacher_id": teacher_id,
+        "organization_id": organization_id,
+        "name": name,
+    }
     if description:
         data["description"] = description
 
@@ -14,15 +29,18 @@ async def create_subject(teacher_id: str, name: str, description: Optional[str])
     return result.data[0]
 
 
-async def get_subjects(teacher_id: str) -> list[dict]:
+async def get_subjects(
+    teacher_id: str, organization_id: Optional[str] = None
+) -> list[dict]:
     supabase = get_supabase()
-    result = (
+    q = (
         supabase.table("subjects")
         .select("*")
         .eq("teacher_id", teacher_id)
-        .order("created_at", desc=True)
-        .execute()
     )
+    if organization_id:
+        q = q.eq("organization_id", organization_id)
+    result = q.order("created_at", desc=True).execute()
     return result.data
 
 

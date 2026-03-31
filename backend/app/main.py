@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.config import get_settings
-from app.routers import subjects, documents, ask, quiz, notes, chats
+from app.routers import subjects, organizations, documents, ask, quiz, notes, chats
 
 settings = get_settings()
 
@@ -19,6 +19,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+app.include_router(organizations.router)
 app.include_router(subjects.router)
 app.include_router(documents.router)
 app.include_router(ask.router)

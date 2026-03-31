@@ -16,6 +16,7 @@ env/
 out/
 dist/
 build/
+*.tsbuildinfo
 
 # IDE
 .vscode/

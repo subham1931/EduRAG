@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useMemo } from "react";
 import { useTheme } from "next-themes";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
@@ -12,10 +12,22 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { ChevronRight, GraduationCap, LogOut, Sun, Moon, Monitor, Menu } from "lucide-react";
+import {
+  Box,
+  Building2,
+  ChevronsUpDown,
+  GraduationCap,
+  LogOut,
+  Menu,
+  Monitor,
+  Moon,
+  Sun,
+} from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { useParams, usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useDashboard } from "@/lib/dashboard-context";
+import api from "@/lib/api";
+import type { Organization } from "@/types";
 
 export function Navbar() {
   const router = useRouter();
@@ -23,10 +35,58 @@ export function Navbar() {
   const searchParams = useSearchParams();
   const params = useParams();
   const subjectId = (params.subjectId as string) || searchParams.get("subjectId");
+  const organizationIdFromUrl = params.organizationId as string | undefined;
   const tab = searchParams.get("tab") || "overview";
   const { subjects, quizTitle } = useDashboard();
 
-  const currentSubject = subjects.find(s => s.id === subjectId);
+  const [organizations, setOrganizations] = useState<Organization[]>([]);
+
+  const currentSubject = subjects.find((s) => s.id === subjectId);
+
+  const effectiveOrganizationId =
+    organizationIdFromUrl ?? currentSubject?.organization_id ?? null;
+
+  const subjectsInOrg = useMemo(() => {
+    if (!effectiveOrganizationId) return [];
+    return subjects.filter((s) => s.organization_id === effectiveOrganizationId);
+  }, [effectiveOrganizationId, subjects]);
+
+  const currentOrganization = useMemo(() => {
+    if (!effectiveOrganizationId) return null;
+    return organizations.find((o) => o.id === effectiveOrganizationId) ?? null;
+  }, [organizations, effectiveOrganizationId]);
+
+  useEffect(() => {
+    let cancelled = false;
+    api
+      .get<Organization[]>("/organizations")
+      .then(({ data }) => {
+        if (!cancelled) setOrganizations(Array.isArray(data) ? data : []);
+      })
+      .catch(() => {
+        if (!cancelled) setOrganizations([]);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!effectiveOrganizationId) return;
+    let cancelled = false;
+    api
+      .get<Organization>(`/organizations/${effectiveOrganizationId}`)
+      .then(({ data }) => {
+        if (cancelled) return;
+        setOrganizations((prev) =>
+          prev.some((o) => o.id === data.id) ? prev : [...prev, data]
+        );
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, [effectiveOrganizationId]);
 
   const [userEmail, setUserEmail] = useState("");
   const [mounted, setMounted] = useState(false);
@@ -69,10 +129,10 @@ export function Navbar() {
 
   const initials = userEmail ? userEmail.charAt(0).toUpperCase() : "U";
   const globalItems = [
-    { label: "Subjects", href: "/dashboard" },
+    { label: "Organizations", href: "/dashboard/organization" },
     { label: "Global Chat", href: "/dashboard?global=chat" },
     { label: "Usage Statistics", href: "/dashboard?global=usage" },
-    { label: "Organization", href: "/dashboard?global=settings" },
+    { label: "Organization settings", href: "/dashboard?global=settings" },
   ];
   const subjectItems = subjectId
     ? [
@@ -98,17 +158,33 @@ export function Navbar() {
         (item.label === "Recycle Bin" && pathname === "/dashboard/trash")
       );
     }
-    return pathname === item.href;
+    if (item.href.startsWith("/dashboard/organization")) {
+      return (
+        pathname === "/dashboard/organization" ||
+        pathname.startsWith("/dashboard/organization/")
+      );
+    }
+    const globalMode = searchParams.get("global");
+    if (pathname !== "/dashboard") return false;
+    try {
+      const itemGlobal = new URL(item.href, "http://localhost").searchParams.get(
+        "global"
+      );
+      if (itemGlobal === null) return globalMode === null;
+      return globalMode === itemGlobal;
+    } catch {
+      return false;
+    }
   };
 
   return (
     <nav className="sticky top-0 z-50 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="flex h-14 items-center justify-between px-4 sm:px-6">
-        <div className="flex items-center gap-4">
+        <div className="flex min-w-0 flex-1 items-center gap-4">
           <Button
             variant="ghost"
             size="icon"
-            className="h-9 w-9 md:hidden"
+            className="h-9 w-9 shrink-0 md:hidden"
             onClick={() => setMobileSidebarOpen((prev) => !prev)}
             ref={menuButtonRef}
           >
@@ -118,37 +194,115 @@ export function Navbar() {
             </span>
           </Button>
 
-          <Link href="/dashboard" className="flex items-center gap-2 group transition-opacity hover:opacity-80">
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-primary-foreground">
-              <GraduationCap className="h-4 w-4" />
-            </div>
-            <span className="hidden sm:inline-block text-sm font-semibold">
-              EduRAG
-            </span>
-          </Link>
+          <div className="flex min-w-0 flex-1 items-center gap-1 sm:gap-1.5 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+            <Link
+              href="/dashboard/organization"
+              className="flex shrink-0 items-center gap-2 rounded-md transition-opacity hover:opacity-80"
+            >
+              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-primary-foreground">
+                <GraduationCap className="h-4 w-4" />
+              </div>
+              <span className="text-sm font-semibold">EduRAG</span>
+            </Link>
 
-          {currentSubject && (
-            <div className="flex items-center gap-2 text-sm text-muted-foreground">
-              <ChevronRight className="h-4 w-4" />
-              <Link
-                href={`/dashboard/${subjectId}`}
-                className={`font-medium truncate max-w-[150px] sm:max-w-[250px] transition-colors hover:text-foreground ${params.quizId ? "" : "text-foreground"}`}
-              >
-                {currentSubject.name}
-              </Link>
-              {params.quizId && quizTitle && (
-                <>
-                  <ChevronRight className="h-4 w-4" />
-                  <span className="font-medium text-foreground truncate max-w-[150px] sm:max-w-[250px]">
-                    {quizTitle}
-                  </span>
-                </>
-              )}
-            </div>
-          )}
+            {effectiveOrganizationId && (
+              <>
+                <span className="shrink-0 text-muted-foreground">/</span>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <button
+                      type="button"
+                      className="flex max-w-[min(40vw,200px)] shrink items-center gap-1.5 rounded-md px-1.5 py-1 text-left text-sm font-medium transition-colors hover:bg-muted/80 focus:outline-none focus-visible:ring-2 focus-visible:ring-ring sm:max-w-[260px]"
+                    >
+                      <Building2 className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+                      <span className="truncate">
+                        {currentOrganization?.name ?? "Organization"}
+                      </span>
+                      <ChevronsUpDown className="h-3.5 w-3.5 shrink-0 text-muted-foreground opacity-70" />
+                    </button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="start" className="w-[min(100vw-2rem,280px)]">
+                    <DropdownMenuLabel className="text-xs font-normal text-muted-foreground">
+                      Organization
+                    </DropdownMenuLabel>
+                    {organizations.map((org) => (
+                      <DropdownMenuItem
+                        key={org.id}
+                        onClick={() => router.push(`/dashboard/organization/${org.id}`)}
+                        className={org.id === effectiveOrganizationId ? "bg-muted" : ""}
+                      >
+                        <Building2 className="mr-2 h-4 w-4" />
+                        <span className="truncate">{org.name}</span>
+                      </DropdownMenuItem>
+                    ))}
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem onClick={() => router.push("/dashboard/organization")}>
+                      All organizations
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </>
+            )}
+
+            {subjectId && (
+              <>
+                <span className="shrink-0 text-muted-foreground">/</span>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <button
+                      type="button"
+                      className="flex max-w-[min(40vw,200px)] shrink items-center gap-1.5 rounded-md px-1.5 py-1 text-left text-sm font-medium transition-colors hover:bg-muted/80 focus:outline-none focus-visible:ring-2 focus-visible:ring-ring sm:max-w-[260px]"
+                    >
+                      <Box className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+                      <span className="truncate">
+                        {currentSubject?.name ?? "Subject"}
+                      </span>
+                      <ChevronsUpDown className="h-3.5 w-3.5 shrink-0 text-muted-foreground opacity-70" />
+                    </button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="start" className="w-[min(100vw-2rem,280px)]">
+                    <DropdownMenuLabel className="text-xs font-normal text-muted-foreground">
+                      Subject
+                    </DropdownMenuLabel>
+                    {subjectsInOrg.map((s) => (
+                      <DropdownMenuItem
+                        key={s.id}
+                        onClick={() => router.push(`/dashboard/${s.id}`)}
+                        className={s.id === subjectId ? "bg-muted" : ""}
+                      >
+                        <Box className="mr-2 h-4 w-4" />
+                        <span className="truncate">{s.name}</span>
+                      </DropdownMenuItem>
+                    ))}
+                    {effectiveOrganizationId && (
+                      <>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem
+                          onClick={() =>
+                            router.push(`/dashboard/organization/${effectiveOrganizationId}`)
+                          }
+                        >
+                          All subjects in organization
+                        </DropdownMenuItem>
+                      </>
+                    )}
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </>
+            )}
+
+            {params.quizId && quizTitle && (
+              <>
+                <span className="shrink-0 text-muted-foreground">/</span>
+                <span className="truncate text-sm font-medium text-foreground max-w-[min(30vw,180px)] sm:max-w-[220px]">
+                  {quizTitle}
+                </span>
+              </>
+            )}
+          </div>
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex shrink-0 items-center gap-3">
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" size="icon" className="h-9 w-9">

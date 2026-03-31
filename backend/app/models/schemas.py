@@ -11,8 +11,23 @@ class TokenPayload(BaseModel):
     exp: Optional[int] = None
 
 
+# ── Organization ───────────────────────────────────────────────────────
+class OrganizationCreate(BaseModel):
+    name: str = Field(..., min_length=1, max_length=200)
+    description: Optional[str] = None
+
+
+class OrganizationResponse(BaseModel):
+    id: str
+    teacher_id: str
+    name: str
+    description: Optional[str] = None
+    created_at: str
+
+
 # ── Subject ───────────────────────────────────────────────────────────
 class SubjectCreate(BaseModel):
+    organization_id: str
     name: str = Field(..., min_length=1, max_length=200)
     description: Optional[str] = None
 
@@ -25,6 +40,7 @@ class SubjectUpdate(BaseModel):
 class SubjectResponse(BaseModel):
     id: str
     teacher_id: str
+    organization_id: str
     name: str
     description: Optional[str] = None
     created_at: str
@@ -39,6 +55,15 @@ class DocumentResponse(BaseModel):
     page_count: int
     chunk_count: int
     created_at: str
+    storage_path: Optional[str] = None
+
+
+class DocumentPreviewUrlResponse(BaseModel):
+    url: str
+
+
+class DocumentUpdate(BaseModel):
+    filename: str = Field(..., min_length=1, max_length=500)
 
 
 # ── Ask ───────────────────────────────────────────────────────────────

@@ -1,6 +1,15 @@
+export interface Organization {
+  id: string;
+  teacher_id: string;
+  name: string;
+  description: string | null;
+  created_at: string;
+}
+
 export interface Subject {
   id: string;
   teacher_id: string;
+  organization_id: string;
   name: string;
   description: string | null;
   created_at: string;
@@ -14,6 +23,7 @@ export interface Document {
   page_count: number;
   chunk_count: number;
   created_at: string;
+  storage_path?: string | null;
 }
 
 export interface AskResponse {

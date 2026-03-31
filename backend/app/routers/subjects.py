@@ -1,5 +1,7 @@
 import traceback
-from fastapi import APIRouter, Depends, HTTPException
+from typing import Optional
+
+from fastapi import APIRouter, Depends, HTTPException, Query
 from app.models.schemas import (
     SubjectCreate,
     SubjectUpdate,
@@ -24,9 +26,16 @@ async def create_subject_endpoint(
 ):
     try:
         print(f"[CREATE SUBJECT] teacher_id={teacher.sub}, name={body.name}")
-        subject = await create_subject(teacher.sub, body.name, body.description)
+        subject = await create_subject(
+            teacher.sub,
+            body.organization_id,
+            body.name,
+            body.description,
+        )
         print(f"[CREATE SUBJECT] success: {subject}")
         return subject
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
         print(f"[CREATE SUBJECT] ERROR: {traceback.format_exc()}")
         raise HTTPException(status_code=500, detail=str(e))
@@ -35,10 +44,11 @@ async def create_subject_endpoint(
 @router.get("", response_model=list[SubjectResponse])
 async def list_subjects_endpoint(
     teacher: TokenPayload = Depends(get_current_teacher),
+    organization_id: Optional[str] = Query(None),
 ):
     try:
-        print(f"[GET SUBJECTS] teacher_id={teacher.sub}")
-        result = await get_subjects(teacher.sub)
+        print(f"[GET SUBJECTS] teacher_id={teacher.sub} org={organization_id}")
+        result = await get_subjects(teacher.sub, organization_id)
         print(f"[GET SUBJECTS] found {len(result)} subjects")
         return result
     except Exception as e:
